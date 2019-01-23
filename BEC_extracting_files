@@ -3,9 +3,6 @@ import pandas as pd
 import os
 import BEC00760_Non_Domestic
 import sys
-import warnings
-
-
 
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
