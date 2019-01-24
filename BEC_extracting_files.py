@@ -25,6 +25,22 @@ class BEC00760(object):
             elif ('Project Summary' == sheetName or 'Beneficiary' == sheetName):
                 print self.BEC00760_worksheet[sheetName]
 
+    def extract_summary_data(self):
+        TEMP_dataframe = self.BEC00760_worksheet['Project Summary'].iloc[86:,1]
+        list_Add_addition_row = TEMP_dataframe[TEMP_dataframe=='Add additional rows as required'].index.tolist()
+        if (len(list_Add_addition_row)==1):
+            TEMP_data_project_summary1 = self.BEC00760_worksheet['Project Summary'].iloc[86:list_Add_addition_row[0], 1:6]
+            TEMP_data_project_summary2 = self.BEC00760_worksheet['Project Summary'].iloc[84:list_Add_addition_row[0],18:21]
+            data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1)
+            return data_project_summary
+        else:
+            print 'Can not identify as there are more "Add additional rows as required" or no results'
+        return
+
+    def extract_beneficiary_data(self):
+        TEMP_data_beneficiary = self.BEC00760_worksheet['Beneficiary'].iloc[8:,1]
+        data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost',''])]
+        return data_beneficiary
 
 class BEC00760_Non_Domestic(object):
     def __init__(self,bec00760_file,sheetName):
@@ -72,13 +88,14 @@ def unprotect_xlsm_file(path,filename):
 
 def main():
     file_name='BEC 00760_ EXAMPLE EXTRACT FIELDS.xlsm'
-    unprotect_xlsm_file(path, file_name)
+    #unprotect_xlsm_file(path, file_name)
     temp_file = BEC00760(file_name)
-
-    non_domestic_1 = temp_file.BEC00760_worksheet['Non Domestic 1']
-    non_domestic_1.print_input_sheet_content()
-    non_domestic_1.extract_data_from_input_sheet()
-    non_domestic_1.print_output_sheet_content()
+    a = temp_file.extract_beneficiary_data()
+    b = temp_file.extract_summary_data()
+    # non_domestic_1 = temp_file.BEC00760_worksheet['Non Domestic 3']
+    # non_domestic_1.print_input_sheet_content()
+    # non_domestic_1.extract_data_from_input_sheet()
+    # non_domestic_1.print_output_sheet_content()
     #non_domestic_1.write_csv_file()
 
     print 'Done!'
