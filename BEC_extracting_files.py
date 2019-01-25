@@ -6,9 +6,10 @@ import sys
 import win32com.client
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
-class BEC00760_Non_Domestic(object):
-    def __init__(self,bec00760_file,sheetName):
-        self.fileName = 'BEC00760'
+class BEC_Non_Domestic(object):
+    def __init__(self,bec00760_file,sheetName,project_name,file_name):
+        self.fileName = file_name
+        self.project_name=project_name
         self.sheetName= sheetName
         self.sheet = pd.read_excel(bec00760_file,sheetName,keep_default_na =False,header=None).dropna(thresh=1)
         self.data_site_reference = ''
@@ -37,8 +38,10 @@ class BEC00760_Non_Domestic(object):
         print 'Data of site measures: '
         print self.data_site_measures
 
-class BEC00760(object):
+class BEC_project(object):
     def __init__(self,file):
+        self.file_name = file
+        self.project_name = re.search(r'BEC(\s?)\d+',file).group()
         self.bec00760_file = pd.ExcelFile(path+file)
         self.BEC00760_worksheet={}
         self.project_summary_dataframe = ''
@@ -47,7 +50,7 @@ class BEC00760(object):
         self.site_measures = ''
         for sheetName in self.bec00760_file.sheet_names:
             if ('Non Domestic' in sheetName):
-                self.BEC00760_worksheet[sheetName] = BEC00760_Non_Domestic(self.bec00760_file,sheetName)
+                self.BEC00760_worksheet[sheetName] = BEC_Non_Domestic(self.bec00760_file,sheetName,self.project_name,self.file_name)
             elif ('Project Summary' == sheetName or 'Beneficiary' == sheetName):
                 self.BEC00760_worksheet[sheetName] = pd.read_excel(self.bec00760_file,sheetName,keep_default_na =False,header=None)
 
@@ -59,7 +62,7 @@ class BEC00760(object):
             if ('Non Domestic' in sheetName):
                 self.BEC00760_worksheet[sheetName].print_input_sheet_content()
             elif ('Project Summary' == sheetName or 'Beneficiary' == sheetName):
-                print 'File name: ', 'BEC00760'
+                print 'File name: ', self.project_name
                 print 'Sheet name: ', sheetName
                 print self.BEC00760_worksheet[sheetName]
 
@@ -74,7 +77,7 @@ class BEC00760(object):
             TEMP_data_project_summary2 = self.BEC00760_worksheet['Project Summary'].iloc[84:list_Add_addition_row[0],18:21].drop([85,86],axis=0).reset_index(drop=True)
             data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1)
             data_project_summary.insert(0,'1',[i for i in range(data_project_summary.shape[0])])
-            data_project_summary.insert(0,'0','BEC00760')
+            data_project_summary.insert(0,'0',self.project_name)
             data_project_summary.iloc[0,0]='Project Code'
             data_project_summary.iloc[0,1]='ID'
             self.project_summary_dataframe=data_project_summary
@@ -84,7 +87,7 @@ class BEC00760(object):
     def extract_beneficiary_data(self):
         TEMP_data_beneficiary = self.BEC00760_worksheet['Beneficiary'].iloc[8:,1]
         data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost','','Enter Name of Beneficiary'])].to_frame().reset_index(drop=True)
-        data_beneficiary.insert(0,0,'BEC00760')
+        data_beneficiary.insert(0,0,self.project_name)
         data_beneficiary.iloc[0,0]='Project Code'
         self.beneficiary_dataframe = data_beneficiary
 
@@ -109,13 +112,13 @@ class BEC00760(object):
             list_reference.append(non_domestic_reference)
     #Non Domestic Measures
         self.site_measures = pd.concat(list_measures,ignore_index=True)
-        self.site_measures.insert(0, '0', 'BEC00760')
+        self.site_measures.insert(0, '0', self.project_name)
         self.site_measures.iloc[0,0]='Project Code'
         self.site_measures.iloc[0,1]='Tab'
         self.site_measures.iloc[0,2]='ID Measure'
     #Non Domestic Reference
         TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True)
-        TEMP_site_reference_df.insert(0, '0', 'BEC00760')
+        TEMP_site_reference_df.insert(0, '0', self.project_name)
         TEMP_site_reference_df.iloc[0,0]='Project Code'
         TEMP_site_reference_df.iloc[0,1]='Tab'
         TEMP_site_reference_df.iloc[0,2]='ID Reference'
@@ -150,10 +153,10 @@ class BEC00760(object):
             print 'Need to run extract_data() to execute input file to have results'
 
     def write_csv_file(self):
-        self.project_summary_dataframe.to_excel(path+'BEC00760_Project Summary.xlsx','Project Summary',header=False,index=False)
-        self.beneficiary_dataframe.to_excel(path+'BEC00760_Beneficiary.xlsx','Beneficiary',header=False,index=False)
-        self.site_references.to_excel(path+'BEC00760_References.xlsx','References',header=False,index=False)
-        self.site_measures.to_excel(path+'BEC00760_Measures.xlsx','Measures',header=False,index=False)
+        self.project_summary_dataframe.to_excel(path+self.project_name+'_Project Summary.xlsx','Project Summary',header=False,index=False)
+        self.beneficiary_dataframe.to_excel(path+self.project_name+'_Beneficiary.xlsx','Beneficiary',header=False,index=False)
+        self.site_references.to_excel(path+self.project_name+'_References.xlsx','References',header=False,index=False)
+        self.site_measures.to_excel(path+self.project_name+'_Measures.xlsx','Measures',header=False,index=False)
 
 def unprotect_xlsm_file(path,filename):
     xcl = win32com.client.Dispatch('Excel.Application')
@@ -166,7 +169,7 @@ def unprotect_xlsm_file(path,filename):
 def main():
     file_name='BEC 00760_ EXAMPLE EXTRACT FIELDS.xlsm'
     #unprotect_xlsm_file(path, file_name)
-    temp_file = BEC00760(file_name)
+    temp_file = BEC_project(file_name)
     temp_file.extract_data()
     if (temp_file.check_available_result()):
         temp_file.write_csv_file()
