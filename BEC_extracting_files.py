@@ -68,6 +68,7 @@ class BEC00760(object):
         list_Add_addition_row = TEMP_dataframe[TEMP_dataframe=='Add additional rows as required'].index.tolist()
         if (len(list_Add_addition_row)==1):
             TEMP_data_project_summary1 = self.BEC00760_worksheet['Project Summary'].iloc[86:list_Add_addition_row[0], 1:6].reset_index(drop=True).drop(3,axis=1)
+            TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:,2:]*100).astype(int).astype(str)+'%')
             TEMP_data_project_summary2 = self.BEC00760_worksheet['Project Summary'].iloc[84:list_Add_addition_row[0],18:21].drop([85,86],axis=0).reset_index(drop=True)
             data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1)
             data_project_summary.insert(0,'1',[i for i in range(data_project_summary.shape[0])])
