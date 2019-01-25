@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 import win32com.client
+from pandas import ExcelWriter
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 class BEC00760_Non_Domestic(object):
@@ -142,15 +143,10 @@ class BEC00760(object):
             print 'Need to run extract_data() to execute input file to have results'
 
     def write_csv_file(self):
-        output_project_summary_filename='BEC_Project_Summary.csv'
-        output_beneficiary_filename='BEC_Beneficiary.csv'
-        output_reference_filename= 'BEC_Site_Reference.csv'
-        output_measures_filename= 'BEC_Site_Measures.csv'
-        # if not (os.path.isfile(path+output_reference_filename)):
-        self.project_summary_dataframe.to_csv(path_or_buf=path + output_project_summary_filename, index=None, header=False)
-        self.beneficiary_dataframe.to_csv(path_or_buf=path + output_beneficiary_filename, index=None, header=False)
-        self.site_references.to_csv(path_or_buf=path+output_reference_filename,index=None,header=False)
-        self.site_measures.to_csv(path_or_buf=path+output_measures_filename,index=None,header=False)
+        self.project_summary_dataframe.to_excel(path+'BEC00760_Project Summary.xlsx','Project Summary',header=False,index=False)
+        self.beneficiary_dataframe.to_excel(path+'BEC00760_Beneficiary.xlsx','Beneficiary',header=False,index=False)
+        self.site_references.to_excel(path+'BEC00760_References.xlsx','References',header=False,index=False)
+        self.site_measures.to_excel(path+'BEC00760_Measures.xlsx','Measures',header=False,index=False)
 
 def unprotect_xlsm_file(path,filename):
     xcl = win32com.client.Dispatch('Excel.Application')
