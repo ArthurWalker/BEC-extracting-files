@@ -68,7 +68,9 @@ class BEC00760(object):
         list_Add_addition_row = TEMP_dataframe[TEMP_dataframe=='Add additional rows as required'].index.tolist()
         if (len(list_Add_addition_row)==1):
             TEMP_data_project_summary1 = self.BEC00760_worksheet['Project Summary'].iloc[86:list_Add_addition_row[0], 1:6].reset_index(drop=True).drop(3,axis=1)
-            TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:,2:]*100).astype(int).astype(str)+'%')
+            TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:,2:]*100).astype(int))
+            TEMP_data_project_summary1.iloc[0,2]+=' (%)'
+            TEMP_data_project_summary1.iloc[0,3]+=' (%)'
             TEMP_data_project_summary2 = self.BEC00760_worksheet['Project Summary'].iloc[84:list_Add_addition_row[0],18:21].drop([85,86],axis=0).reset_index(drop=True)
             data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1)
             data_project_summary.insert(0,'1',[i for i in range(data_project_summary.shape[0])])
@@ -81,7 +83,7 @@ class BEC00760(object):
 
     def extract_beneficiary_data(self):
         TEMP_data_beneficiary = self.BEC00760_worksheet['Beneficiary'].iloc[8:,1]
-        data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost',''])].to_frame().reset_index(drop=True)
+        data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost','','Enter Name of Beneficiary'])].to_frame().reset_index(drop=True)
         data_beneficiary.insert(0,0,'BEC00760')
         data_beneficiary.iloc[0,0]='Project Code'
         self.beneficiary_dataframe = data_beneficiary
@@ -112,11 +114,15 @@ class BEC00760(object):
         self.site_measures.iloc[0,1]='Tab'
         self.site_measures.iloc[0,2]='ID Measure'
     #Non Domestic Reference
-        self.site_references = pd.concat(list_reference,ignore_index=True)
-        self.site_references.insert(0, '0', 'BEC00760')
-        self.site_references.iloc[0,0]='Project Code'
-        self.site_references.iloc[0,1]='Tab'
-        self.site_references.iloc[0,2]='ID Reference'
+        TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True)
+        TEMP_site_reference_df.insert(0, '0', 'BEC00760')
+        TEMP_site_reference_df.iloc[0,0]='Project Code'
+        TEMP_site_reference_df.iloc[0,1]='Tab'
+        TEMP_site_reference_df.iloc[0,2]='ID Reference'
+        TEMP_site_reference_df.iloc[0,10]+=' (m2)'
+        TEMP_floor_area_figure= TEMP_site_reference_df.iloc[1:,10].replace(r'm2(\D?)','',regex=True)
+        TEMP_site_reference_df.update(TEMP_floor_area_figure)
+        self.site_references=TEMP_site_reference_df
 
     def extract_data(self):
         self.extract_summary_data()
