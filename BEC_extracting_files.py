@@ -133,7 +133,7 @@ class BEC_project(object):
         self.extract_summary_data()
         self.extract_beneficiary_data()
         self.extract_non_domestic_data()
-        print 'Data outputs of '+self.project_name+' are available'
+        print 'Data outputs of '+self.project_name+' from '+self.file_name+' are available'
 
     def check_available_result(self):
         if (self.project_summary_dataframe.shape[0]>0 and self.beneficiary_dataframe.shape[0]>0 and self.site_references.shape[0]>0 and self.site_measures.shape[0]>0):
@@ -190,7 +190,7 @@ def execute_each_project(folder_name):
                 if (temp_file.check_available_result()):
                     temp_file.write_csv_file(folder_name)
                 else:
-                    print 'Output data of '+folder_name+' is not available'
+                    print 'Output data of folder '+folder_name+' is not available'
     else:
         print 'Folder '+folder_name+' is empty'
 
