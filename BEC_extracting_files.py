@@ -81,10 +81,13 @@ class BEC_project(object):
             list_empty = TEMP_data_project_summary1[TEMP_data_project_summary1[1]==''].index.tolist()
             self.empty_line=list_0+list_empty
             TEMP_data_project_summary1 = TEMP_data_project_summary1.drop(self.empty_line,axis=0).reset_index(drop=True)
-            TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:,2:]*100).astype(int))
-            TEMP_data_project_summary1.iloc[0,2]+=' (%)'
-            TEMP_data_project_summary1.iloc[0,3]+=' (%)'
-            TEMP_data_project_summary2 = self.BEC00760_worksheet['Project Summary'].iloc[list_Values_Automatically_brought[-1]-1:list_Add_addition_row[0],18:21].drop([list_Values_Automatically_brought[0],list_Values_Automatically_brought[0]+1],axis=0).reset_index(drop=True)
+            if (len(TEMP_data_project_summary1.iloc[:,2].unique())==1 and TEMP_data_project_summary1.iloc[:,2].unique()[0]==u' '):
+                TEMP_data_project_summary1.drop(4,axis=1,inplace=True)
+            else:
+                TEMP_data_project_summary1.iloc[0,3]+=' (%)'
+            TEMP_data_project_summary1.iloc[0, 2] += ' (%)'
+            TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:, 2:] * 100).astype(int))
+            TEMP_data_project_summary2 = self.BEC00760_worksheet['Project Summary'].iloc[list_Values_Automatically_brought[-1]-1:list_Add_addition_row[0],18:21].drop([list_Values_Automatically_brought[-1],list_Values_Automatically_brought[-1]+1],axis=0).reset_index(drop=True)
             TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
             data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1)
             data_project_summary.insert(0,'1',[i for i in range(data_project_summary.shape[0])])
