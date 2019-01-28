@@ -39,10 +39,12 @@ class BEC_Non_Domestic(object):
         print self.data_site_measures
 
 class BEC_project(object):
-    def __init__(self,file):
+    def __init__(self,folder,file):
         self.file_name = file
+        self.input_folder= path+folder+'/'
+        self.out_put_folder = ''
         self.project_name = re.search(r'BEC(\s?)\d+',file).group()
-        self.bec00760_file = pd.ExcelFile(path+file)
+        self.bec00760_file = pd.ExcelFile(self.input_folder+file)
         self.BEC00760_worksheet={}
         self.project_summary_dataframe = ''
         self.beneficiary_dataframe = ''
@@ -131,7 +133,7 @@ class BEC_project(object):
         self.extract_summary_data()
         self.extract_beneficiary_data()
         self.extract_non_domestic_data()
-        print 'Data outputs are available'
+        print 'Data outputs of '+self.project_name+' are available'
 
     def check_available_result(self):
         if (self.project_summary_dataframe.shape[0]>0 and self.beneficiary_dataframe.shape[0]>0 and self.site_references.shape[0]>0 and self.site_measures.shape[0]>0):
@@ -159,10 +161,11 @@ class BEC_project(object):
         if not os.path.exists(new_path+self.project_name+'/'):
             os.makedirs(new_path+self.project_name+'/')
         new_path +=self.project_name+'/'
-        self.project_summary_dataframe.to_excel(new_path+self.project_name+'_Project Summary.xlsx','Project Summary',header=False,index=False)
-        self.beneficiary_dataframe.to_excel(new_path+self.project_name+'_Beneficiary.xlsx','Beneficiary',header=False,index=False)
-        self.site_references.to_excel(new_path+self.project_name+'_References.xlsx','References',header=False,index=False)
-        self.site_measures.to_excel(new_path+self.project_name+'_Measures.xlsx','Measures',header=False,index=False)
+        self.out_put_folder = new_path
+        self.project_summary_dataframe.to_excel(self.out_put_folder+self.project_name+'_Project Summary.xlsx','Project Summary',header=False,index=False)
+        self.beneficiary_dataframe.to_excel(self.out_put_folder+self.project_name+'_Beneficiary.xlsx','Beneficiary',header=False,index=False)
+        self.site_references.to_excel(self.out_put_folder+self.project_name+'_References.xlsx','References',header=False,index=False)
+        self.site_measures.to_excel(self.out_put_folder+self.project_name+'_Measures.xlsx','Measures',header=False,index=False)
 
 def unprotect_xlsm_file(path,filename):
     xcl = win32com.client.Dispatch('Excel.Application')
@@ -182,12 +185,12 @@ def execute_each_project(folder_name):
     if (len(file_list) > 0):
         for file_name in file_list:
             if ('.xlsm' in file_name):
-                temp_file = BEC_project(file_name)
+                temp_file = BEC_project(folder_name,file_name)
                 temp_file.extract_data()
                 if (temp_file.check_available_result()):
                     temp_file.write_csv_file(folder_name)
                 else:
-                    print 'Output data is not available'
+                    print 'Output data of '+folder_name+' is not available'
     else:
         print 'Folder '+folder_name+' is empty'
 
