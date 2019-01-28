@@ -8,11 +8,11 @@ import time
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 class BEC_Non_Domestic(object):
-    def __init__(self,bec00760_file,sheetName,project_name,file_name):
+    def __init__(self,bec_file,sheetName,project_name,file_name):
         self.fileName = file_name
         self.project_name=project_name
         self.sheetName= sheetName
-        self.sheet = pd.read_excel(bec00760_file,sheetName,keep_default_na =False,header=None).dropna(thresh=1)
+        self.sheet = pd.read_excel(bec_file,sheetName,keep_default_na =False,header=None).dropna(thresh=1)
         self.data_site_reference = ''
         self.data_site_measures = ''
 
@@ -45,25 +45,28 @@ class BEC_project(object):
         self.input_folder= path+folder+'/'
         self.out_put_folder = ''
         self.project_name = re.search(r'BEC(\s?)\d+',file).group()
-        self.bec00760_file = pd.ExcelFile(self.input_folder+file)
+        self.bec_file = pd.ExcelFile(self.input_folder+file)
         self.BEC00760_worksheet={}
-        self.project_summary_dataframe = ''
-        self.beneficiary_dataframe = ''
-        self.site_references = ''
-        self.site_measures = ''
         self.empty_line = []
+        self.beneficiary_dataframe = None
+        self.project_summary_dataframe = None
+        self.site_references = None
+        self.site_measures = None
         print 'Executing '+self.file_name
-        for sheetName in self.bec00760_file.sheet_names:
+        for sheetName in self.bec_file.sheet_names:
             if ('Non Domestic' in sheetName):
-                self.BEC00760_worksheet[sheetName] = BEC_Non_Domestic(self.bec00760_file,sheetName,self.project_name,self.file_name)
-            elif ('Project Summary' == sheetName or 'Beneficiary' == sheetName):
-                self.BEC00760_worksheet[sheetName] = pd.read_excel(self.bec00760_file,sheetName,keep_default_na =False,header=None)
+                self.BEC00760_worksheet[sheetName] = BEC_Non_Domestic(self.bec_file,sheetName,self.project_name,self.file_name)
+            if ('Project Summary' == sheetName):
+                self.BEC00760_worksheet[sheetName] = pd.read_excel(self.bec_file,sheetName,keep_default_na =False,header=None)
+            if ('Beneficiary' == sheetName):
+                self.BEC00760_worksheet[sheetName] = pd.read_excel(self.bec_file, sheetName, keep_default_na=False,header=None)
+
 
     def print_list_sheet(self):
-        print self.bec00760_file.sheet_names
+        print self.bec_file.sheet_names
 
     def print_original_sheet(self):
-        for sheetName in self.bec00760_file.sheet_names:
+        for sheetName in self.bec_file.sheet_names:
             if ('Non Domestic' in sheetName):
                 self.BEC00760_worksheet[sheetName].print_input_sheet_content()
             elif ('Project Summary' == sheetName or 'Beneficiary' == sheetName):
@@ -143,12 +146,13 @@ class BEC_project(object):
 
     def extract_data(self):
         self.extract_summary_data()
-        self.extract_beneficiary_data()
+        if 'Beneficiary' in self.bec_file.sheet_names:
+            self.extract_beneficiary_data()
         self.extract_non_domestic_data()
         print '==> Data outputs of '+self.project_name+' from '+self.file_name+' are available'
 
     def check_available_result(self):
-        if (self.project_summary_dataframe.shape[0]>0 and self.beneficiary_dataframe.shape[0]>0 and self.site_references.shape[0]>0 and self.site_measures.shape[0]>0):
+        if (self.project_summary_dataframe is not None and self.beneficiary_dataframe is not None  and self.site_references is not None  and self.site_measures.shape[0] is not None ):
             return True
         else:
             return False
@@ -196,7 +200,7 @@ def execute_each_project(folder_name):
     file_list =access_to_working_file(folder_name)
     if (len(file_list) > 0):
         for file_name in file_list:
-            if ('626' in file_name):
+            if ('.xlsm' in file_name):
                 temp_file = BEC_project(folder_name,file_name)
                 temp_file.extract_data()
                 if (temp_file.check_available_result()):
