@@ -103,7 +103,7 @@ class BEC_project(object):
 
     def extract_beneficiary_data(self):
         TEMP_data_beneficiary = self.BEC00760_worksheet['Beneficiary'].iloc[8:,1]
-        data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost','','Enter Name of Beneficiary'])].to_frame().reset_index(drop=True)
+        data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost','','Enter Name of Beneficiary','0'])].to_frame().reset_index(drop=True)
         data_beneficiary.insert(0,0,self.project_name)
         data_beneficiary.iloc[0,0]='Project Code'
         self.beneficiary_dataframe = data_beneficiary
