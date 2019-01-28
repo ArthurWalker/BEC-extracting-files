@@ -4,6 +4,7 @@ import re
 import os
 import sys
 import win32com.client
+import time
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 class BEC_Non_Domestic(object):
@@ -50,6 +51,8 @@ class BEC_project(object):
         self.beneficiary_dataframe = ''
         self.site_references = ''
         self.site_measures = ''
+        self.empty_line = []
+        print 'Executing '+self.file_name
         for sheetName in self.bec00760_file.sheet_names:
             if ('Non Domestic' in sheetName):
                 self.BEC00760_worksheet[sheetName] = BEC_Non_Domestic(self.bec00760_file,sheetName,self.project_name,self.file_name)
@@ -69,14 +72,20 @@ class BEC_project(object):
                 print self.BEC00760_worksheet[sheetName]
 
     def extract_summary_data(self):
-        TEMP_dataframe = self.BEC00760_worksheet['Project Summary'].iloc[86:,1]
+        TEMP_dataframe = self.BEC00760_worksheet['Project Summary'].iloc[:,1]
+        list_Values_Automatically_brought = TEMP_dataframe[TEMP_dataframe=='Values automatically brought in from "Non Domestic " sheets'].index.tolist()
         list_Add_addition_row = TEMP_dataframe[TEMP_dataframe=='Add additional rows as required'].index.tolist()
         if (len(list_Add_addition_row)==1):
-            TEMP_data_project_summary1 = self.BEC00760_worksheet['Project Summary'].iloc[86:list_Add_addition_row[0], 1:6].reset_index(drop=True).drop(3,axis=1)
+            TEMP_data_project_summary1 = self.BEC00760_worksheet['Project Summary'].iloc[list_Values_Automatically_brought[-1]+1:list_Add_addition_row[0], 1:6].reset_index(drop=True).drop(3,axis=1)
+            list_0 = TEMP_data_project_summary1[TEMP_data_project_summary1.iloc[:,0] == 0].index.tolist()
+            list_empty = TEMP_data_project_summary1[TEMP_data_project_summary1[1]==''].index.tolist()
+            self.empty_line=list_0+list_empty
+            TEMP_data_project_summary1 = TEMP_data_project_summary1.drop(self.empty_line,axis=0).reset_index(drop=True)
             TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:,2:]*100).astype(int))
             TEMP_data_project_summary1.iloc[0,2]+=' (%)'
             TEMP_data_project_summary1.iloc[0,3]+=' (%)'
-            TEMP_data_project_summary2 = self.BEC00760_worksheet['Project Summary'].iloc[84:list_Add_addition_row[0],18:21].drop([85,86],axis=0).reset_index(drop=True)
+            TEMP_data_project_summary2 = self.BEC00760_worksheet['Project Summary'].iloc[list_Values_Automatically_brought[-1]-1:list_Add_addition_row[0],18:21].drop([list_Values_Automatically_brought[0],list_Values_Automatically_brought[0]+1],axis=0).reset_index(drop=True)
+            TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
             data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1)
             data_project_summary.insert(0,'1',[i for i in range(data_project_summary.shape[0])])
             data_project_summary.insert(0,'0',self.project_name)
@@ -133,7 +142,7 @@ class BEC_project(object):
         self.extract_summary_data()
         self.extract_beneficiary_data()
         self.extract_non_domestic_data()
-        print 'Data outputs of '+self.project_name+' from '+self.file_name+' are available'
+        print '==> Data outputs of '+self.project_name+' from '+self.file_name+' are available'
 
     def check_available_result(self):
         if (self.project_summary_dataframe.shape[0]>0 and self.beneficiary_dataframe.shape[0]>0 and self.site_references.shape[0]>0 and self.site_measures.shape[0]>0):
@@ -184,20 +193,21 @@ def execute_each_project(folder_name):
     file_list =access_to_working_file(folder_name)
     if (len(file_list) > 0):
         for file_name in file_list:
-            if ('.xlsm' in file_name):
+            if ('626' in file_name):
                 temp_file = BEC_project(folder_name,file_name)
                 temp_file.extract_data()
                 if (temp_file.check_available_result()):
                     temp_file.write_csv_file(folder_name)
                 else:
-                    print 'Output data of folder '+folder_name+' is not available'
+                    print '==> Output data of folder '+folder_name+' is not available'
     else:
         print 'Folder '+folder_name+' is empty'
 
 def main():
+    start_time = time.time()
     folder_name = 'BEC 2018'
     execute_each_project(folder_name)
-    print 'Done!'
+    print 'Done! from ', time.asctime( time.localtime(start_time)),' to ',time.asctime( time.localtime(time.time()))
 
 if __name__=='__main__':
     main()
