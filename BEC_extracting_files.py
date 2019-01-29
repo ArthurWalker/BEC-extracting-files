@@ -5,6 +5,8 @@ import os
 import sys
 import win32com.client
 import time
+from tqdm import tqdm
+
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 class BEC_Non_Domestic(object):
@@ -52,7 +54,6 @@ class BEC_project(object):
         self.project_summary_dataframe = None
         self.site_references = None
         self.site_measures = None
-        print 'Executing '+self.file_name
         for sheetName in self.bec_file.sheet_names:
             if ('Project Summary' == sheetName):
                 self.BEC_worksheet[sheetName] = pd.read_excel(self.bec_file, sheetName, keep_default_na=False,header=None)
@@ -173,10 +174,13 @@ class BEC_project(object):
             os.makedirs(new_path+self.project_name+'/')
         new_path +=self.project_name+'/'
         self.out_put_folder = new_path
-        self.project_summary_dataframe.to_excel(self.out_put_folder+self.project_name+'_Project Summary.xlsx','Project Summary',header=False,index=False)
-        #self.beneficiary_dataframe.to_excel(self.out_put_folder+self.project_name+'_Beneficiary.xlsx','Beneficiary',header=False,index=False)
-        self.site_references.to_excel(self.out_put_folder+self.project_name+'_References.xlsx','References',header=False,index=False)
-        self.site_measures.to_excel(self.out_put_folder+self.project_name+'_Measures.xlsx','Measures',header=False,index=False)
+        if (self.project_summary_dataframe is not None):
+            self.project_summary_dataframe.to_excel(self.out_put_folder+self.project_name+'_Project Summary.xlsx','Project Summary',header=False,index=False)
+        if (self.beneficiary_dataframe is not None):
+            self.beneficiary_dataframe.to_excel(self.out_put_folder+self.project_name+'_Beneficiary.xlsx','Beneficiary',header=False,index=False)
+        if (self.site_references is not None and self.site_measures is not None):
+            self.site_references.to_excel(self.out_put_folder+self.project_name+'_References.xlsx','References',header=False,index=False)
+            self.site_measures.to_excel(self.out_put_folder+self.project_name+'_Measures.xlsx','Measures',header=False,index=False)
 
 def unprotect_xlsm_file(path,filename):
     xcl = win32com.client.Dispatch('Excel.Application')
@@ -193,18 +197,21 @@ def access_to_working_file(folder_name):
 
 def execute_each_project(folder_name):
     file_list =access_to_working_file(folder_name)
+    errors = []
     if (len(file_list) > 0):
-        for file_name in file_list:
+        for file_name in tqdm(file_list):
             if ('.xlsm' in file_name):
-                temp_file = BEC_project(folder_name,file_name)
-                temp_file.extract_data()
-                if (temp_file.check_available_result()):
-                    print '==> Data outputs of ' + temp_file.project_name + ' from ' + temp_file.file_name + ' are available'
-                    temp_file.write_csv_file(folder_name)
-                else:
-                    print '$$$ Output data of '+temp_file.project_name+' from '+temp_file.file_name+' is not available'
+                try:
+                    temp_file = BEC_project(folder_name,file_name)
+                    temp_file.extract_data()
+                    if (temp_file.check_available_result()):
+                        temp_file.write_csv_file(folder_name)
+                except Exception:
+                    errors+='$$$ Output data of ' + temp_file.project_name + ' from ' + temp_file.file_name + ' is not available'
     else:
         print 'Folder '+folder_name+' is empty'
+    if (len(errors)>0):
+        print errors
 
 def main():
     start_time = time.time()
