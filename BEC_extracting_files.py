@@ -47,6 +47,7 @@ class BEC_project(object):
         self.input_folder= path+folder+'/'
         self.out_put_folder = ''
         self.project_name = re.search(r'BEC(\s?)\d+',file).group()
+        self.project_year = re.search(r'\d+',self.input_folder).group()
         self.bec_file = pd.ExcelFile(self.input_folder+file)
         self.BEC_worksheet={}
         self.empty_line = []
@@ -94,18 +95,22 @@ class BEC_project(object):
             TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Automatically_brought[-1]-1:list_Add_addition_row[0],18:21].drop([list_Values_Automatically_brought[-1],list_Values_Automatically_brought[-1]+1],axis=0).reset_index(drop=True)
             TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
             data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1)
-            data_project_summary.insert(0,'0',self.project_name)
+            data_project_summary.insert(0,'-1',self.project_name)
             data_project_summary.iloc[0,0]='Project Code'
-            data_project_summary.iloc[0,1]='ID'
+            data_project_summary.iloc[0,1]='Tab'
+            data_project_summary.insert(0, '-2', self.project_year)
+            data_project_summary.iloc[0, 0] = 'Year'
             self.project_summary_dataframe=data_project_summary
         else:
             print 'Can not identify as there are more "Add additional rows as required" or no results'
 
     def extract_beneficiary_data(self):
         TEMP_data_beneficiary = self.BEC_worksheet['Beneficiary'].iloc[8:,1]
-        data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost','','Enter Name of Beneficiary','0'])].to_frame().reset_index(drop=True)
+        data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost','','Enter Name of Beneficiary',0])].to_frame().reset_index(drop=True)
         data_beneficiary.insert(0,0,self.project_name)
         data_beneficiary.iloc[0,0]='Project Code'
+        data_beneficiary.insert(0, '-1', self.project_year)
+        data_beneficiary.iloc[0, 0] = 'Year'
         self.beneficiary_dataframe = data_beneficiary
 
     def extract_non_domestic_data(self):
@@ -130,18 +135,22 @@ class BEC_project(object):
     #Non Domestic Measures
         self.site_measures = pd.concat(list_measures,ignore_index=True)
         self.site_measures.insert(0, '0', self.project_name)
-        self.site_measures.iloc[0,0]='Project Code'
-        self.site_measures.iloc[0,1]='Tab'
-        self.site_measures.iloc[0,2]='ID Measure'
+        self.site_measures.insert(0, '-1', self.project_year)
+        self.site_measures.iloc[0,0]='Year'
+        self.site_measures.iloc[0,1]='Project Code'
+        self.site_measures.iloc[0,2]='Tab'
+        self.site_measures.iloc[0,3]='ID Measures'
     #Non Domestic Reference
         TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True)
         TEMP_site_reference_df.insert(0, '0', self.project_name)
-        TEMP_site_reference_df.iloc[0,0]='Project Code'
-        TEMP_site_reference_df.iloc[0,1]='Tab'
-        TEMP_site_reference_df.iloc[0,2]='ID Reference'
-        TEMP_site_reference_df.iloc[0,10]+=' (m2)'
-        TEMP_floor_area_figure= TEMP_site_reference_df.iloc[1:,10].replace(r'm2(\D?)','',regex=True)
-        TEMP_site_reference_df.update(TEMP_floor_area_figure)
+        TEMP_site_reference_df.insert(0, '-1', self.project_year)
+        TEMP_site_reference_df.iloc[0,0]='Year'
+        TEMP_site_reference_df.iloc[0,1]='Project Code'
+        TEMP_site_reference_df.iloc[0,2]='Tab'
+        TEMP_site_reference_df.iloc[0,3]='ID Measures'
+        TEMP_site_reference_df.iloc[0,11]+=' (m2)'
+        #TEMP_floor_area_figure= TEMP_site_reference_df.iloc[1:,11].replace(r'm2(\D?)','',regex=True)
+        #TEMP_site_reference_df.update(TEMP_floor_area_figure)
         self.site_references=TEMP_site_reference_df
 
     def extract_data(self):
@@ -207,7 +216,7 @@ def execute_each_project(folder_name):
                     if (temp_file.check_available_result()):
                         temp_file.write_csv_file(folder_name)
                 except Exception:
-                    errors+='$$$ Output data of ' + temp_file.project_name + ' from ' + temp_file.file_name + ' is not available'
+                    errors+='Output data of ' + temp_file.project_name + ' from ' + temp_file.file_name + ' is not available'
     else:
         print 'Folder '+folder_name+' is empty'
     if (len(errors)>0):
