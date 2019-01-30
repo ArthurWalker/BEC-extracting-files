@@ -150,8 +150,9 @@ class BEC_project(object):
         TEMP_site_reference_df.iloc[0,3]='ID References'
         TEMP_site_reference_df.iloc[0,11]+=' (number)'
         TEMP_site_reference_df.insert(12, 'Unit', 'Unit')
-        TEMP_site_reference_df.iloc[1:,12]=TEMP_site_reference_df.iloc[1:,11].str.replace(r'\d+(\.?)\d+','',regex=True)
-        TEMP_site_reference_df.iloc[1:, 11] = TEMP_site_reference_df.iloc[1:, 11].str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
+        TEMP_site_reference_df.insert(12, 'Number', 'Num')
+        TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,11].str.replace(r'\d+(\.?)\d+','',regex=True)
+        TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, 11].str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
         self.site_references=TEMP_site_reference_df
 
     def extract_data(self):
