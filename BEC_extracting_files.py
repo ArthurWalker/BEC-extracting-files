@@ -162,7 +162,7 @@ class BEC_project(object):
             return False
 
     # Write individual project into seperate files
-    def write_csv_file(self,folder_name):
+    def write_seperate_excel_file(self,folder_name):
         if not os.path.exists(path+folder_name+' Extracted Data/'):
             os.makedirs(path+folder_name+' Extracted Data/')
         new_path = path + folder_name + ' Extracted Data/'
@@ -216,12 +216,12 @@ def execute_each_project(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('626' in file_name):
+            if ('.xlsm' in file_name):
                 #try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
                     if (temp_file.check_available_result()):
-                        temp_file.write_csv_file(folder_name)
+                        temp_file.write_seperate_excel_file(folder_name)
                 #except Exception:
                 #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
