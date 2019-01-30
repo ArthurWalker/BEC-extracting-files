@@ -147,10 +147,11 @@ class BEC_project(object):
         TEMP_site_reference_df.iloc[0,0]='Year'
         TEMP_site_reference_df.iloc[0,1]='Project Code'
         TEMP_site_reference_df.iloc[0,2]='Tab'
-        TEMP_site_reference_df.iloc[0,3]='ID Measures'
-        TEMP_site_reference_df.iloc[0,11]+=' (m2)'
-        #TEMP_floor_area_figure= TEMP_site_reference_df.iloc[1:,11].replace(r'm2(\D?)','',regex=True)
-        #TEMP_site_reference_df.update(TEMP_floor_area_figure)
+        TEMP_site_reference_df.iloc[0,3]='ID References'
+        TEMP_site_reference_df.iloc[0,11]+=' (number)'
+        TEMP_site_reference_df.insert(12, 'Unit', 'Unit')
+        TEMP_site_reference_df.iloc[1:,12]=TEMP_site_reference_df.iloc[1:,11].str.replace(r'\d+(\.?)\d+','',regex=True)
+        TEMP_site_reference_df.iloc[1:, 11] = TEMP_site_reference_df.iloc[1:, 11].str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
         self.site_references=TEMP_site_reference_df
 
     def extract_data(self):
@@ -199,7 +200,6 @@ def unprotect_xlsm_file(path,filename):
     wb.SaveAs(filename,None,'','')
     xcl.Quit()
 
-
 def access_to_working_file(folder_name):
     files = os.listdir(path+folder_name)
     return files
@@ -209,18 +209,19 @@ def execute_each_project(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('.xlsm' in file_name):
-                try:
+            if ('772' in file_name):
+                #try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
                     if (temp_file.check_available_result()):
                         temp_file.write_csv_file(folder_name)
-                except Exception:
-                    errors+='Output data of ' + temp_file.project_name + ' from ' + temp_file.file_name + ' is not available'
+                #except Exception:
+                #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
         print 'Folder '+folder_name+' is empty'
-    if (len(errors)>0):
-        print errors
+    #if (len(errors)>0):
+    #    print ''
+    #    print 'Errors: ',errors
 
 def main():
     start_time = time.time()
@@ -230,3 +231,5 @@ def main():
 
 if __name__=='__main__':
     main()
+
+
