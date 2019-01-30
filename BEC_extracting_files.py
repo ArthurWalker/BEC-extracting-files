@@ -18,11 +18,7 @@ class BEC_Non_Domestic(object):
         self.data_site_reference = ''
         self.data_site_measures = ''
 
-    def print_input_sheet_content(self):
-        print 'File name: ',self.fileName
-        print 'Sheet name: ',self.sheetName
-        print self.sheet
-
+    # Extract input data from non domestic tab
     def extract_data_from_input_sheet(self):
         small_df = pd.concat([self.sheet.loc[11:13,3],self.sheet.loc[11:13,2]],axis=1)
         small_df = small_df.transpose().reset_index(drop=True).transpose()
@@ -32,6 +28,11 @@ class BEC_Non_Domestic(object):
         TEMP_data_site_measures = pd.concat([TEMP_data_site_measures_proposed_energy_upgrades,TEMP_data_site_measures_unit],axis=1)
         self.data_site_measures = TEMP_data_site_measures.loc[~TEMP_data_site_measures[0].isin(['Total','','-'])]
         return self.data_site_measures,self.data_site_reference
+
+    def print_input_sheet_content(self):
+        print 'File name: ',self.fileName
+        print 'Sheet name: ',self.sheetName
+        print self.sheet
 
     def print_output_sheet_content(self):
         print ''
@@ -63,19 +64,7 @@ class BEC_project(object):
             if ('Beneficiary' == sheetName):
                 self.BEC_worksheet[sheetName] = pd.read_excel(self.bec_file, sheetName, keep_default_na=False,header=None)
 
-
-    def print_list_sheet(self):
-        print self.bec_file.sheet_names
-
-    def print_original_sheet(self):
-        for sheetName in self.bec_file.sheet_names:
-            if ('Non Domestic' in sheetName):
-                self.BEC_worksheet[sheetName].print_input_sheet_content()
-            elif ('Project Summary' == sheetName or 'Beneficiary' == sheetName):
-                print 'File name: ', self.project_name
-                print 'Sheet name: ', sheetName
-                print self.BEC_worksheet[sheetName]
-
+    #Extract project summary data
     def extract_summary_data(self):
         TEMP_dataframe = self.BEC_worksheet['Project Summary'].iloc[:,1]
         list_Values_Automatically_brought = TEMP_dataframe[TEMP_dataframe=='Values automatically brought in from "Non Domestic " sheets'].index.tolist()
@@ -104,6 +93,7 @@ class BEC_project(object):
         else:
             print 'Can not identify as there are more "Add additional rows as required" or no results'
 
+    # Extract beneficiary data
     def extract_beneficiary_data(self):
         TEMP_data_beneficiary = self.BEC_worksheet['Beneficiary'].iloc[8:,1]
         data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost','','Enter Name of Beneficiary',0])].to_frame().reset_index(drop=True)
@@ -113,6 +103,7 @@ class BEC_project(object):
         data_beneficiary.iloc[0, 0] = 'Year'
         self.beneficiary_dataframe = data_beneficiary
 
+    # Collect data from each non domestic data tab in each project
     def extract_non_domestic_data(self):
         non_domestic_list = [i for i in self.BEC_worksheet.keys() if 'Non Domestic' in i and int(re.search(r'\b\d+\b',i).group()) in self.project_summary_dataframe[0].tolist()]
         list_measures = []
@@ -155,12 +146,14 @@ class BEC_project(object):
         TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, 11].str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
         self.site_references=TEMP_site_reference_df
 
+    # Function that controls extracting functions
     def extract_data(self):
         self.extract_summary_data()
         if 'Beneficiary' in self.bec_file.sheet_names:
             self.extract_beneficiary_data()
         self.extract_non_domestic_data()
 
+    # Checking if attributes are available or not
     def check_available_result(self):
         #if (self.project_summary_dataframe is not None and self.beneficiary_dataframe is not None  and self.site_references is not None  and self.site_measures.shape[0] is not None ):
         if (self.project_summary_dataframe is not None and self.site_references is not None and self.site_measures.shape[0] is not None):
@@ -168,15 +161,7 @@ class BEC_project(object):
         else:
             return False
 
-    def print_output_sheets(self):
-        if self.check_available_result():
-            print 'Project summary',self.project_summary_dataframe
-            print 'Beneficiary', self.beneficiary_dataframe
-            print 'Site references', self.site_references
-            print 'Site measures', self.site_measures
-        else:
-            print 'Need to run extract_data() to execute input file to have results'
-
+    # Write individual project into seperate files
     def write_csv_file(self,folder_name):
         if not os.path.exists(path+folder_name+' Extracted Data/'):
             os.makedirs(path+folder_name+' Extracted Data/')
@@ -192,6 +177,27 @@ class BEC_project(object):
         if (self.site_references is not None and self.site_measures is not None):
             self.site_references.to_excel(self.out_put_folder+self.project_name+'_References.xlsx','References',header=False,index=False)
             self.site_measures.to_excel(self.out_put_folder+self.project_name+'_Measures.xlsx','Measures',header=False,index=False)
+
+    def print_list_sheet(self):
+        print self.bec_file.sheet_names
+
+    def print_original_sheet(self):
+        for sheetName in self.bec_file.sheet_names:
+            if ('Non Domestic' in sheetName):
+                self.BEC_worksheet[sheetName].print_input_sheet_content()
+            elif ('Project Summary' == sheetName or 'Beneficiary' == sheetName):
+                print 'File name: ', self.project_name
+                print 'Sheet name: ', sheetName
+                print self.BEC_worksheet[sheetName]
+
+    def print_output_sheets(self):
+        if self.check_available_result():
+            print 'Project summary',self.project_summary_dataframe
+            print 'Beneficiary', self.beneficiary_dataframe
+            print 'Site references', self.site_references
+            print 'Site measures', self.site_measures
+        else:
+            print 'Need to run extract_data() to execute input file to have results'
 
 def unprotect_xlsm_file(path,filename):
     xcl = win32com.client.Dispatch('Excel.Application')
@@ -210,7 +216,7 @@ def execute_each_project(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('772' in file_name):
+            if ('.xlsm' in file_name):
                 #try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
