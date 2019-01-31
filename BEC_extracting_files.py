@@ -124,13 +124,14 @@ class BEC_project(object):
             non_domestic_reference.insert(0, '1', non_domestic_sheet)
             list_reference.append(non_domestic_reference)
     #Non Domestic Measures
-        self.site_measures = pd.concat(list_measures,ignore_index=True)
-        self.site_measures.insert(0, '0', self.project_name)
-        self.site_measures.insert(0, '-1', self.project_year)
-        self.site_measures.iloc[0,0]='Year'
-        self.site_measures.iloc[0,1]='Project Code'
-        self.site_measures.iloc[0,2]='Tab'
-        self.site_measures.iloc[0,3]='ID Measures'
+        TEMP_site_measures_df = pd.concat(list_measures,ignore_index=True)
+        TEMP_site_measures_df.insert(0, '0', self.project_name)
+        TEMP_site_measures_df.insert(0, '-1', self.project_year)
+        TEMP_site_measures_df.iloc[0,0]='Year'
+        TEMP_site_measures_df.iloc[0,1]='Project Code'
+        TEMP_site_measures_df.iloc[0,2]='Tab'
+        TEMP_site_measures_df.iloc[0,3]='ID Measures'
+        self.site_measures = TEMP_site_measures_df
     #Non Domestic Reference
         TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True)
         TEMP_site_reference_df.insert(0, '0', self.project_name)
@@ -163,9 +164,9 @@ class BEC_project(object):
 
     # Write individual project into seperate files
     def write_seperate_excel_file(self,folder_name):
-        if not os.path.exists(path+folder_name+' Extracted Data/'):
-            os.makedirs(path+folder_name+' Extracted Data/')
-        new_path = path + folder_name + ' Extracted Data/'
+        if not os.path.exists(path+folder_name+' Shared Data/'):
+            os.makedirs(path+folder_name+' Shared Data/')
+        new_path = path + folder_name + ' Shared Data/'
         if not os.path.exists(new_path+self.project_name+'/'):
             os.makedirs(new_path+self.project_name+'/')
         new_path +=self.project_name+'/'
@@ -177,6 +178,51 @@ class BEC_project(object):
         if (self.site_references is not None and self.site_measures is not None):
             self.site_references.to_excel(self.out_put_folder+self.project_name+'_References.xlsx','References',header=False,index=False)
             self.site_measures.to_excel(self.out_put_folder+self.project_name+'_Measures.xlsx','Measures',header=False,index=False)
+
+    # Add data into an excel file
+    def add_project(self):
+        if not os.path.exists(path+'Shared Data/'):
+            os.makedirs(path+'Shared Data/')
+        self.out_put_folder= path+'Shared Data/'
+        if not (os.path.isfile(self.out_put_folder+'Project Summary.xlsx')):
+            self.project_summary_dataframe.to_excel(self.out_put_folder +'Project Summary.xlsx','Project Summary', header=False, index=False)
+        else:
+        # Project Summary
+            extracted_project_summary_df = pd.read_excel(self.out_put_folder + 'Project Summary.xlsx', 'Project Summary', keep_default_na=False,header=None,index=False)
+            #extracted_project_summary_df=extracted_project_summary_df.rename(columns=extracted_project_summary_df.iloc[0]).drop(extracted_project_summary_df.index[0])
+            self.project_summary_dataframe.columns=[i for i in range(len(self.project_summary_dataframe.columns))]
+            current_project_summary_df = self.project_summary_dataframe
+            #current_project_summary_df = self.project_summary_dataframe.rename(columns=self.project_summary_dataframe.iloc[0]).drop(self.project_summary_dataframe.index[0])
+            #lastest_update_summary_df=pd.concat([extracted_project_summary_df,current_project_summary_df],axis=0,ignore_index=True,sort = False)
+            lastest_update_summary_df=extracted_project_summary_df.append(current_project_summary_df,sort=False,ignore_index=True)
+            lastest_update_summary_df.to_excel(self.out_put_folder +'Project Summary.xlsx','Project Summary', header=False, index=False)
+        if not (os.path.isfile(self.out_put_folder+'Beneficiary.xlsx')):
+            self.beneficiary_dataframe.to_excel(self.out_put_folder + 'Beneficiary.xlsx', 'Beneficiary',header=False, index=False)
+        else:
+        # Beneficiary
+            extracted_beneficiary_df = pd.read_excel(self.out_put_folder + 'Beneficiary.xlsx', 'Beneficiary',keep_default_na=False, header=None, index=False)
+            self.beneficiary_dataframe.columns = [i for i in range(len(self.beneficiary_dataframe.columns))]
+            current_beneficiary_df = self.beneficiary_dataframe
+            lastest_update_beneficiary_df = extracted_beneficiary_df.append(current_beneficiary_df, sort=False,ignore_index=True)
+            lastest_update_beneficiary_df.to_excel(self.out_put_folder + 'Beneficiary.xlsx', 'Beneficiary',header=False, index=False)
+        if not (os.path.isfile(self.out_put_folder+'Non Domestic- Site Measures.xlsx')):
+            self.site_measures.to_excel(self.out_put_folder + 'Non Domestic- Site Measures.xlsx', 'Measures', header=False,index=False)
+        else:
+            # Non Domestic: Site Measures
+            extracted_site_measures_df = pd.read_excel(self.out_put_folder + 'Non Domestic- Site Measures.xlsx','Measures', keep_default_na=False, header=None,index=False)
+            self.site_measures.columns = [i for i in range(len(self.site_measures.columns))]
+            current_site_measures_df = self.site_measures
+            lastest_update_measures_df = extracted_site_measures_df.append(current_site_measures_df, sort=False,ignore_index=True)
+            lastest_update_measures_df.to_excel(self.out_put_folder + 'Non Domestic- Site Measures.xlsx', 'Measures',header=False, index=False)
+        if not (os.path.isfile(self.out_put_folder+'Non Domestic- Site References.xlsx')):
+            self.site_references.to_excel(self.out_put_folder + 'Non Domestic- Site References.xlsx', 'References',header=False, index=False)
+        else:
+            # Non Domestic: Site Reference
+            extracted_site_reference_df = pd.read_excel(self.out_put_folder + 'Non Domestic- Site References.xlsx','References', keep_default_na=False, header=None, index=False)
+            self.site_references.columns = [i for i in range(len(self.site_references.columns))]
+            current_site_references_df = self.site_references
+            lastest_update_references_df = extracted_site_reference_df.append(current_site_references_df, sort=False,ignore_index=True)
+            lastest_update_references_df.to_excel(self.out_put_folder + 'Non Domestic- Site References.xlsx','References', header=False, index=False)
 
     def print_list_sheet(self):
         print self.bec_file.sheet_names
@@ -216,12 +262,13 @@ def execute_each_project(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('.xlsm' in file_name):
+            if ('81' in file_name):
                 #try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
                     if (temp_file.check_available_result()):
-                        temp_file.write_seperate_excel_file(folder_name)
+                        #temp_file.write_seperate_excel_file(folder_name)
+                        temp_file.add_project()
                 #except Exception:
                 #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
