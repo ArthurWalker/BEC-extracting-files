@@ -296,7 +296,7 @@ def access_to_working_file(folder_name):
     files = os.listdir(path+folder_name)
     return files
 
-def execute_each_project(folder_name):
+def execute_each_project_in_a_year(folder_name):
     file_list =access_to_working_file(folder_name)
     errors = []
     if (len(file_list) > 0):
@@ -319,7 +319,7 @@ def execute_each_project(folder_name):
 def main():
     start_time = time.time()
     folder_name = 'BEC 2018'
-    execute_each_project(folder_name)
+    execute_each_project_in_a_year(folder_name)
     print 'Done! from ', time.asctime( time.localtime(start_time)),' to ',time.asctime( time.localtime(time.time()))
 
 if __name__=='__main__':
