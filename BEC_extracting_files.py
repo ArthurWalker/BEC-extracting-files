@@ -203,7 +203,7 @@ class BEC_project(object):
             writer.sheets= dict((ws.title,ws) for ws in book.worksheets)
             current_df.iloc[1:,:].to_excel(writer,file_name,index=False,header=False,startrow=writer.sheets[file_name].max_row)
             writer.save()
-            #else:
+            #else: to see what makes different
             #    extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False)
             #    lastest_update_df = extracted_df.append(current_df, sort=False, ignore_index=True)
             #    lastest_update_df.to_excel(self.out_put_folder +file_name+'.xlsx',file_name, header=False, index=False)
