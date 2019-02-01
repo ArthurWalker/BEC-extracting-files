@@ -84,9 +84,9 @@ class BEC_project(object):
             TEMP_data_project_summary1 = TEMP_data_project_summary1.drop(self.empty_line,axis=0).reset_index(drop=True)
             if (len(TEMP_data_project_summary1.iloc[:,3].unique())==1 and TEMP_data_project_summary1.iloc[:,3].unique()[0]==u' '):
                 TEMP_data_project_summary1.drop(4,axis=1,inplace=True)
-            else:
-                TEMP_data_project_summary1.iloc[0,3]+=' (%)'
-            TEMP_data_project_summary1.iloc[0, 3] += ' (%)'
+            # else:
+            #     TEMP_data_project_summary1.iloc[0,3]+=' (%)'
+            # TEMP_data_project_summary1.iloc[0, 3] += ' (%)'
             TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:, 3:] * 100).astype(int))
             TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Automatically_brought[-1]-1:list_Add_addition_row[0],18:21].drop([list_Values_Automatically_brought[-1],list_Values_Automatically_brought[-1]+1],axis=0).reset_index(drop=True)
             TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
@@ -149,11 +149,12 @@ class BEC_project(object):
         TEMP_site_reference_df.iloc[0,1]='Project Code'
         TEMP_site_reference_df.iloc[0,2]='Tab'
         TEMP_site_reference_df.iloc[0,3]='ID References'
-        TEMP_site_reference_df.iloc[0,11]+=' (number)'
-        TEMP_site_reference_df.insert(12, 'Unit', 'Unit')
-        TEMP_site_reference_df.insert(12, 'Number', 'Num')
-        TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,11].astype(str).str.replace(r'\d+(\.?)\d+','',regex=True)
-        TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, 11].astype(str).str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
+        columns = TEMP_site_reference_df.iloc[0,:].reset_index(drop=True)
+        floor_area = columns[columns=='Floor Area of building'].index[0]
+        TEMP_site_reference_df.insert(int(floor_area+1), 'Unit', 'Unit')
+        TEMP_site_reference_df.insert(int(floor_area+1), 'Number', 'Num')
+        TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,int(floor_area)].astype(str).str.replace(r'\d+(\.?)\d+','',regex=True)
+        TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, int(floor_area)].astype(str).str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
         TEMP_site_reference_df.update(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
         self.site_references=TEMP_site_reference_df
 
@@ -187,6 +188,7 @@ class BEC_project(object):
             self.beneficiary_dataframe.to_excel(self.out_put_folder+self.project_name+'_Beneficiary.xlsx','Beneficiary',header=False,index=False)
         if (self.site_references is not None and self.site_measures is not None):
             self.site_references.to_excel(self.out_put_folder+self.project_name+'_References.xlsx','References',header=False,index=False)
+            self.site_references.to_excel(self.out_put_folder+self.project_name+'_References.xlsx','References',header=False,index=False)
             self.site_measures.to_excel(self.out_put_folder+self.project_name+'_Measures.xlsx','Measures',header=False,index=False)
 
     # Write to files
@@ -199,18 +201,35 @@ class BEC_project(object):
             current_df = dataframe
             #current_df = dataframe.rename(columns=dataframe.iloc[0]).drop(dataframe.index[0])
             extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False,nrows=1)
-            if current_df.iloc[0, :].astype(str).tolist() == extracted_df.iloc[0,:].astype(str).tolist():
+        # to see what makes different
+            if current_df.iloc[0, :].astype(str).tolist() != extracted_df.iloc[0,:].astype(str).tolist():
+                current_possition,extract_possition = find_details_of_deferences(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0,:].astype(str).tolist())
+                if len(extract_possition)>0:
+                    for new_column in extract_possition:
+                        if extract_possition.index(new_column) != 0:
+                           new_column[1] += 1
+                        current_df=fill_empty_value_into_blank_columns(new_column,current_df)
+                if len(current_possition) > 0:
+                    extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,keep_default_na=False, header=None, index=False)
+                    for new_column in current_possition:
+                        if current_possition.index(new_column)!=0:
+                           new_column[1]+=1
+                        extracted_df = fill_empty_value_into_blank_columns(new_column,extracted_df)
+                    extracted_df.to_excel(self.out_put_folder + file_name + '.xlsx', file_name, header=False,index=False)
+            if  current_df.iloc[0, :].astype(str).tolist() == extracted_df.iloc[0,:].astype(str).tolist():
                 book = load_workbook(self.out_put_folder + file_name + '.xlsx')
-                writer = pd.ExcelWriter(self.out_put_folder + file_name + '.xlsx',engine='openpyxl')
+                writer = pd.ExcelWriter(self.out_put_folder + file_name + '.xlsx', engine='openpyxl')
                 writer.book = book
-                writer.sheets= dict((ws.title,ws) for ws in book.worksheets)
-                current_df.iloc[1:,:].to_excel(writer,file_name,index=False,header=False,startrow=writer.sheets[file_name].max_row)
+                writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+                current_df.iloc[1:, :].to_excel(writer, file_name, index=False, header=False,startrow=writer.sheets[file_name].max_row)
                 writer.save()
-            else:#to see what makes different
-               extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False)
-               extracted_df=extracted_df.drop(extracted_df.index[0])
-               lastest_update_df = extracted_df.append(current_df, sort=False, ignore_index=True)
-               lastest_update_df.to_excel(self.out_put_folder +file_name+'.xlsx',file_name, header=False, index=False)
+
+            # Append to the whole df which is not recommended
+            # extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,
+            #                              keep_default_na=False, header=None, index=False)
+            # extracted_df = extracted_df.drop(extracted_df.index[0])
+            # lastest_update_df = extracted_df.append(current_df, sort=False, ignore_index=True)
+            # lastest_update_df.to_excel(self.out_put_folder + file_name + '.xlsx', file_name, header=False,index=False)
 
     # Add data into an excel file
     def add_project(self):
@@ -243,6 +262,23 @@ class BEC_project(object):
             print 'Site measures', self.site_measures
         else:
             print 'Need to run extract_data() to execute input file to have results'
+
+def fill_empty_value_into_blank_columns(new_column,current_df):
+    current_df.insert(new_column[1], new_column[0], new_column[0])
+    current_df.columns = [i for i in range(len(current_df.columns))]
+    current_df.iloc[1:, new_column[1]] = ''
+    return current_df
+
+def find_details_of_deferences(list1,list2):
+    diff = list(set(list1).symmetric_difference(set(list2)))
+    index_list1 = []
+    index_list2 = []
+    for i in diff:
+        if i in list1:
+            index_list1.append([i,list1.index(i)])
+        elif i in list2:
+            index_list2.append([i,list2.index(i)])
+    return index_list1,index_list2
 
 def deal_with_strange_characters(series):
     series=series.apply(lambda x:x.encode('utf-8').decode('utf-8')[:-1])
