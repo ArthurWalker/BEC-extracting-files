@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
 import re
@@ -91,6 +92,7 @@ class BEC_project(object):
             data_project_summary.iloc[0,1]='Tab'
             data_project_summary.insert(0, '-2', self.project_year)
             data_project_summary.iloc[0, 0] = 'Year'
+            #data_project_summary.update(deal_with_strange_characters(data_project_summary.iloc[0,:]))
             self.project_summary_dataframe=data_project_summary
         else:
             print 'Can not identify as there are more "Add additional rows as required" or no results'
@@ -133,6 +135,7 @@ class BEC_project(object):
         TEMP_site_measures_df.iloc[0,1]='Project Code'
         TEMP_site_measures_df.iloc[0,2]='Tab'
         TEMP_site_measures_df.iloc[0,3]='ID Measures'
+        TEMP_site_measures_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_measures_df.iloc[0, 16:20]))
         self.site_measures = TEMP_site_measures_df
     #Non Domestic Reference
         TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True)
@@ -147,6 +150,7 @@ class BEC_project(object):
         TEMP_site_reference_df.insert(12, 'Number', 'Num')
         TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,11].astype(str).str.replace(r'\d+(\.?)\d+','',regex=True)
         TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, 11].astype(str).str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
+        TEMP_site_reference_df.update(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
         self.site_references=TEMP_site_reference_df
 
     # Function that controls extracting functions
@@ -192,18 +196,17 @@ class BEC_project(object):
             #current_df = dataframe.rename(columns=dataframe.iloc[0]).drop(dataframe.index[0])
             extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False,nrows=1)
             #extracted_df=extracted_df.rename(columns=extracted_df.iloc[0]).drop(extracted_df.index[0])
-            if current_df.iloc[0, :].astype(str).tolist() == extracted_df.iloc[0,:].astype(str).tolist():
-                book = load_workbook(self.out_put_folder + file_name + '.xlsx')
-                writer = pd.ExcelWriter(self.out_put_folder + file_name + '.xlsx',engine='openpyxl')
-                writer.book = book
-                writer.sheets= dict((ws.title,ws) for ws in book.worksheets)
-                current_df.iloc[1:,:].to_excel(writer,file_name,index=False,header=False,startrow=writer.sheets[file_name].max_row)
-                writer.save()
-            else:
-                extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False)
-                # lastest_update_df=pd.concat([extracted_df,current_df],axis=0,ignore_index=True,sort = False)
-                lastest_update_df = extracted_df.append(current_df, sort=False, ignore_index=True)
-                lastest_update_df.to_excel(self.out_put_folder +file_name+'.xlsx',file_name, header=False, index=False)
+            #if current_df.iloc[0, :].astype(str).tolist() == extracted_df.iloc[0,:].astype(str).tolist():
+            book = load_workbook(self.out_put_folder + file_name + '.xlsx')
+            writer = pd.ExcelWriter(self.out_put_folder + file_name + '.xlsx',engine='openpyxl')
+            writer.book = book
+            writer.sheets= dict((ws.title,ws) for ws in book.worksheets)
+            current_df.iloc[1:,:].to_excel(writer,file_name,index=False,header=False,startrow=writer.sheets[file_name].max_row)
+            writer.save()
+            #else:
+            #    extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False)
+            #    lastest_update_df = extracted_df.append(current_df, sort=False, ignore_index=True)
+            #    lastest_update_df.to_excel(self.out_put_folder +file_name+'.xlsx',file_name, header=False, index=False)
 
     # Add data into an excel file
     def add_project(self):
@@ -236,6 +239,10 @@ class BEC_project(object):
             print 'Site measures', self.site_measures
         else:
             print 'Need to run extract_data() to execute input file to have results'
+
+def deal_with_strange_characters(series):
+    series=series.apply(lambda x:x.encode('utf-8').decode('utf-8')[:-1])
+    return series
 
 def unprotect_xlsm_file(path,filename):
     xcl = win32com.client.Dispatch('Excel.Application')
