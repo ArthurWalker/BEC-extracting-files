@@ -6,19 +6,11 @@ import sys
 import xlwings as xw
 import win32com.client
 
-def unprotect_xlsx(path,filename):
-    xcl = win32com.client.Dispatch('Excel.Application')
-    pw_str = 'Bec2018dec2017'
-    wb = xcl.Workbooks.Open(path+filename,False,True,None,pw_str)
-    xcl.DisplayAlerts=False
-    wb.SaveAs(filename,None,'','')
-    xcl.Quit()
 
 def main():
 
-    path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
+    path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/BEC 2018/')
     file_name = 'BEC 00760_ EXAMPLE EXTRACT FIELDS.xlsm'
-    unprotect_xlsx(path,file_name)
     BEC_file = pd.ExcelFile(path + file_name)
 
     BEC_sheet = {}

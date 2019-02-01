@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
 import re
@@ -6,6 +7,8 @@ import sys
 import win32com.client
 import time
 from tqdm import tqdm
+import openpyxl
+from openpyxl import load_workbook
 
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
@@ -89,6 +92,7 @@ class BEC_project(object):
             data_project_summary.iloc[0,1]='Tab'
             data_project_summary.insert(0, '-2', self.project_year)
             data_project_summary.iloc[0, 0] = 'Year'
+            #data_project_summary.update(deal_with_strange_characters(data_project_summary.iloc[0,:]))
             self.project_summary_dataframe=data_project_summary
         else:
             print 'Can not identify as there are more "Add additional rows as required" or no results'
@@ -124,13 +128,15 @@ class BEC_project(object):
             non_domestic_reference.insert(0, '1', non_domestic_sheet)
             list_reference.append(non_domestic_reference)
     #Non Domestic Measures
-        self.site_measures = pd.concat(list_measures,ignore_index=True)
-        self.site_measures.insert(0, '0', self.project_name)
-        self.site_measures.insert(0, '-1', self.project_year)
-        self.site_measures.iloc[0,0]='Year'
-        self.site_measures.iloc[0,1]='Project Code'
-        self.site_measures.iloc[0,2]='Tab'
-        self.site_measures.iloc[0,3]='ID Measures'
+        TEMP_site_measures_df = pd.concat(list_measures,ignore_index=True)
+        TEMP_site_measures_df.insert(0, '0', self.project_name)
+        TEMP_site_measures_df.insert(0, '-1', self.project_year)
+        TEMP_site_measures_df.iloc[0,0]='Year'
+        TEMP_site_measures_df.iloc[0,1]='Project Code'
+        TEMP_site_measures_df.iloc[0,2]='Tab'
+        TEMP_site_measures_df.iloc[0,3]='ID Measures'
+        TEMP_site_measures_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_measures_df.iloc[0, 16:20]))
+        self.site_measures = TEMP_site_measures_df
     #Non Domestic Reference
         TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True)
         TEMP_site_reference_df.insert(0, '0', self.project_name)
@@ -144,6 +150,7 @@ class BEC_project(object):
         TEMP_site_reference_df.insert(12, 'Number', 'Num')
         TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,11].astype(str).str.replace(r'\d+(\.?)\d+','',regex=True)
         TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, 11].astype(str).str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
+        TEMP_site_reference_df.update(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
         self.site_references=TEMP_site_reference_df
 
     # Function that controls extracting functions
@@ -162,10 +169,10 @@ class BEC_project(object):
             return False
 
     # Write individual project into seperate files
-    def write_csv_file(self,folder_name):
-        if not os.path.exists(path+folder_name+' Extracted Data/'):
-            os.makedirs(path+folder_name+' Extracted Data/')
-        new_path = path + folder_name + ' Extracted Data/'
+    def write_seperate_excel_file(self,folder_name):
+        if not os.path.exists(path+folder_name+' Shared Data/'):
+            os.makedirs(path+folder_name+' Shared Data/')
+        new_path = path + folder_name + ' Shared Data/'
         if not os.path.exists(new_path+self.project_name+'/'):
             os.makedirs(new_path+self.project_name+'/')
         new_path +=self.project_name+'/'
@@ -177,6 +184,40 @@ class BEC_project(object):
         if (self.site_references is not None and self.site_measures is not None):
             self.site_references.to_excel(self.out_put_folder+self.project_name+'_References.xlsx','References',header=False,index=False)
             self.site_measures.to_excel(self.out_put_folder+self.project_name+'_Measures.xlsx','Measures',header=False,index=False)
+
+    # Write to files
+    def write_files(self,dataframe,file_name):
+        if not (os.path.isfile(self.out_put_folder+file_name+'.xlsx')):
+            dataframe.to_excel(self.out_put_folder +file_name+'.xlsx',file_name, header=False, index=False)
+        else:
+        # Tab
+            dataframe.columns=[i for i in range(len(dataframe.columns))]
+            current_df = dataframe
+            #current_df = dataframe.rename(columns=dataframe.iloc[0]).drop(dataframe.index[0])
+            extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False,nrows=1)
+            #extracted_df=extracted_df.rename(columns=extracted_df.iloc[0]).drop(extracted_df.index[0])
+            #if current_df.iloc[0, :].astype(str).tolist() == extracted_df.iloc[0,:].astype(str).tolist():
+            book = load_workbook(self.out_put_folder + file_name + '.xlsx')
+            writer = pd.ExcelWriter(self.out_put_folder + file_name + '.xlsx',engine='openpyxl')
+            writer.book = book
+            writer.sheets= dict((ws.title,ws) for ws in book.worksheets)
+            current_df.iloc[1:,:].to_excel(writer,file_name,index=False,header=False,startrow=writer.sheets[file_name].max_row)
+            writer.save()
+            #else: to see what makes different
+            #    extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False)
+            #    lastest_update_df = extracted_df.append(current_df, sort=False, ignore_index=True)
+            #    lastest_update_df.to_excel(self.out_put_folder +file_name+'.xlsx',file_name, header=False, index=False)
+
+    # Add data into an excel file
+    def add_project(self):
+        if not os.path.exists(path+'Shared Data/'):
+            os.makedirs(path+'Shared Data/')
+        self.out_put_folder= path+'Shared Data/'
+        self.write_files(self.project_summary_dataframe,'Project Summary')
+        if (self.beneficiary_dataframe is not None):
+            self.write_files(self.beneficiary_dataframe,'Beneficiary')
+        self.write_files(self.site_measures,'Site Measures')
+        self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
         print self.bec_file.sheet_names
@@ -199,6 +240,10 @@ class BEC_project(object):
         else:
             print 'Need to run extract_data() to execute input file to have results'
 
+def deal_with_strange_characters(series):
+    series=series.apply(lambda x:x.encode('utf-8').decode('utf-8')[:-1])
+    return series
+
 def unprotect_xlsm_file(path,filename):
     xcl = win32com.client.Dispatch('Excel.Application')
     pw_str = 'Bec2018dec2017'
@@ -216,12 +261,13 @@ def execute_each_project(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('626' in file_name):
+            if ('.xlsm' in file_name):
                 #try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
                     if (temp_file.check_available_result()):
-                        temp_file.write_csv_file(folder_name)
+                        #temp_file.write_seperate_excel_file(folder_name)
+                        temp_file.add_project()
                 #except Exception:
                 #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
