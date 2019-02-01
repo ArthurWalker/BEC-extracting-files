@@ -318,7 +318,7 @@ def execute_each_project_in_a_year(folder_name):
 
 def main():
     start_time = time.time()
-    folder_name = 'BEC 2018'
+    folder_name = 'BEC 2017'
     execute_each_project_in_a_year(folder_name)
     print 'Done! from ', time.asctime( time.localtime(start_time)),' to ',time.asctime( time.localtime(time.time()))
 
