@@ -25,7 +25,11 @@ class BEC_Non_Domestic(object):
     def extract_data_from_input_sheet(self):
         small_df = pd.concat([self.sheet.loc[11:13,3],self.sheet.loc[11:13,2]],axis=1)
         small_df = small_df.transpose().reset_index(drop=True).transpose()
-        self.data_site_reference = self.sheet.iloc[2:14,0:2].append(small_df,ignore_index=True)
+        TEMP_df = self.sheet.iloc[2:14,0:2].reset_index(drop=True)
+        list_empty = TEMP_df[TEMP_df[0] == ''].index.tolist()
+        if (len(list_empty)>0):
+            TEMP_df=(TEMP_df.drop(list_empty, axis=0).reset_index(drop=True))
+        self.data_site_reference = TEMP_df.append(small_df,ignore_index=True)
         TEMP_data_site_measures_proposed_energy_upgrades =self.sheet.iloc[15:25,0:7].reset_index(drop=True).drop([1,3,5],axis=1)
         TEMP_data_site_measures_unit = self.sheet.iloc[14:25, 7:24].drop(15,axis=0).reset_index(drop=True).drop([20,21],axis=1)
         TEMP_data_site_measures = pd.concat([TEMP_data_site_measures_proposed_energy_upgrades,TEMP_data_site_measures_unit],axis=1)
@@ -100,7 +104,7 @@ class BEC_project(object):
     # Extract beneficiary data
     def extract_beneficiary_data(self):
         TEMP_data_beneficiary = self.BEC_worksheet['Beneficiary'].iloc[8:,1]
-        data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost','','Enter Name of Beneficiary',0])].to_frame().reset_index(drop=True)
+        data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost','','Enter Name of Beneficiary','Enter Name of Beneficiary ','Name Of Beneficiary',0])].to_frame().reset_index(drop=True)
         data_beneficiary.insert(0,0,self.project_name)
         data_beneficiary.iloc[0,0]='Project Code'
         data_beneficiary.insert(0, '-1', self.project_year)
@@ -195,24 +199,24 @@ class BEC_project(object):
             current_df = dataframe
             #current_df = dataframe.rename(columns=dataframe.iloc[0]).drop(dataframe.index[0])
             extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False,nrows=1)
-            #extracted_df=extracted_df.rename(columns=extracted_df.iloc[0]).drop(extracted_df.index[0])
-            #if current_df.iloc[0, :].astype(str).tolist() == extracted_df.iloc[0,:].astype(str).tolist():
-            book = load_workbook(self.out_put_folder + file_name + '.xlsx')
-            writer = pd.ExcelWriter(self.out_put_folder + file_name + '.xlsx',engine='openpyxl')
-            writer.book = book
-            writer.sheets= dict((ws.title,ws) for ws in book.worksheets)
-            current_df.iloc[1:,:].to_excel(writer,file_name,index=False,header=False,startrow=writer.sheets[file_name].max_row)
-            writer.save()
-            #else: to see what makes different
-            #    extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False)
-            #    lastest_update_df = extracted_df.append(current_df, sort=False, ignore_index=True)
-            #    lastest_update_df.to_excel(self.out_put_folder +file_name+'.xlsx',file_name, header=False, index=False)
+            if current_df.iloc[0, :].astype(str).tolist() == extracted_df.iloc[0,:].astype(str).tolist():
+                book = load_workbook(self.out_put_folder + file_name + '.xlsx')
+                writer = pd.ExcelWriter(self.out_put_folder + file_name + '.xlsx',engine='openpyxl')
+                writer.book = book
+                writer.sheets= dict((ws.title,ws) for ws in book.worksheets)
+                current_df.iloc[1:,:].to_excel(writer,file_name,index=False,header=False,startrow=writer.sheets[file_name].max_row)
+                writer.save()
+            else:#to see what makes different
+               extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False)
+               extracted_df=extracted_df.drop(extracted_df.index[0])
+               lastest_update_df = extracted_df.append(current_df, sort=False, ignore_index=True)
+               lastest_update_df.to_excel(self.out_put_folder +file_name+'.xlsx',file_name, header=False, index=False)
 
     # Add data into an excel file
     def add_project(self):
-        if not os.path.exists(path+'Shared Data/'):
-            os.makedirs(path+'Shared Data/')
-        self.out_put_folder= path+'Shared Data/'
+        if not os.path.exists(path+'BEC 2018 Shared Data/'):
+            os.makedirs(path+'BEC 2018 Shared Data/')
+        self.out_put_folder= path+'BEC 2018 Shared Data/'
         self.write_files(self.project_summary_dataframe,'Project Summary')
         if (self.beneficiary_dataframe is not None):
             self.write_files(self.beneficiary_dataframe,'Beneficiary')
@@ -262,19 +266,19 @@ def execute_each_project(folder_name):
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
             if ('.xlsm' in file_name):
-                #try:
+                try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
                     if (temp_file.check_available_result()):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
-                #except Exception:
-                #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
+                except Exception:
+                   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
         print 'Folder '+folder_name+' is empty'
-    #if (len(errors)>0):
-    #    print ''
-    #    print 'Errors: ',errors
+    if (len(errors)>0):
+       print ''
+       print 'Errors: ',errors
 
 def main():
     start_time = time.time()
