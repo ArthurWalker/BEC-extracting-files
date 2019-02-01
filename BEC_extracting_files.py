@@ -206,14 +206,14 @@ class BEC_project(object):
                 current_possition,extract_possition = find_details_of_deferences(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0,:].astype(str).tolist())
                 if len(extract_possition)>0:
                     for new_column in extract_possition:
-                        #if extract_possition.index(new_column) != 0:
-                        #    new_column[1] += 1
+                        if extract_possition.index(new_column) != 0:
+                           new_column[1] += 1
                         current_df=fill_empty_value_into_blank_columns(new_column,current_df)
                 if len(current_possition) > 0:
                     extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,keep_default_na=False, header=None, index=False)
                     for new_column in current_possition:
-                        #if current_possition.index(new_column)!=0:
-                        #    new_column[1]+=1
+                        if current_possition.index(new_column)!=0:
+                           new_column[1]+=1
                         extracted_df = fill_empty_value_into_blank_columns(new_column,extracted_df)
                     extracted_df.to_excel(self.out_put_folder + file_name + '.xlsx', file_name, header=False,index=False)
             if  current_df.iloc[0, :].astype(str).tolist() == extracted_df.iloc[0,:].astype(str).tolist():
