@@ -155,7 +155,7 @@ class BEC_project(object):
         TEMP_site_reference_df.insert(int(floor_area+1), 'Number', 'Num')
         TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,int(floor_area)].astype(str).str.replace(r'\d+(\.?)\d+','',regex=True)
         TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, int(floor_area)].astype(str).str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
-        TEMP_site_reference_df.update(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
+        TEMP_site_reference_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
         self.site_references=TEMP_site_reference_df
 
     # Function that controls extracting functions
@@ -203,18 +203,19 @@ class BEC_project(object):
             extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False,nrows=1)
         # to see what makes different
             if current_df.iloc[0, :].astype(str).tolist() != extracted_df.iloc[0,:].astype(str).tolist():
-                current_possition,extract_possition = find_details_of_deferences(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0,:].astype(str).tolist())
+                #current_possition,extract_possition = find_details_of_deferences(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0,:].astype(str).tolist())
+                extract_possition = find_deference(extracted_df.iloc[0, :].astype(str).tolist(), current_df.iloc[0, :].astype(str).tolist())
                 if len(extract_possition)>0:
                     for new_column in extract_possition:
-                        if extract_possition.index(new_column) != 0:
-                           new_column[1] += 1
+                        new_column[1] += extract_possition.index(new_column)
                         current_df=fill_empty_value_into_blank_columns(new_column,current_df)
+                current_possition = find_deference(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0, :].astype(str).tolist())
                 if len(current_possition) > 0:
-                    extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,keep_default_na=False, header=None, index=False)
+                    extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,
+                                                 keep_default_na=False, header=None, index=False)
                     for new_column in current_possition:
-                        if current_possition.index(new_column)!=0:
-                           new_column[1]+=1
-                        extracted_df = fill_empty_value_into_blank_columns(new_column,extracted_df)
+                        new_column[1] += current_possition.index(new_column)
+                        extracted_df = fill_empty_value_into_blank_columns(new_column, extracted_df)
                     extracted_df.to_excel(self.out_put_folder + file_name + '.xlsx', file_name, header=False,index=False)
             if  current_df.iloc[0, :].astype(str).tolist() == extracted_df.iloc[0,:].astype(str).tolist():
                 book = load_workbook(self.out_put_folder + file_name + '.xlsx')
@@ -236,10 +237,10 @@ class BEC_project(object):
         if not os.path.exists(path+'BEC 2018 Shared Data/'):
             os.makedirs(path+'BEC 2018 Shared Data/')
         self.out_put_folder= path+'BEC 2018 Shared Data/'
-        self.write_files(self.project_summary_dataframe,'Project Summary')
-        if (self.beneficiary_dataframe is not None):
-            self.write_files(self.beneficiary_dataframe,'Beneficiary')
-        self.write_files(self.site_measures,'Site Measures')
+        # self.write_files(self.project_summary_dataframe,'Project Summary')
+        # if (self.beneficiary_dataframe is not None):
+        #     self.write_files(self.beneficiary_dataframe,'Beneficiary')
+        # self.write_files(self.site_measures,'Site Measures')
         self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
@@ -264,10 +265,18 @@ class BEC_project(object):
             print 'Need to run extract_data() to execute input file to have results'
 
 def fill_empty_value_into_blank_columns(new_column,current_df):
-    current_df.insert(new_column[1], new_column[0], new_column[0])
+    current_df.insert(new_column[1], 'Empty Value', new_column[0])
     current_df.columns = [i for i in range(len(current_df.columns))]
     current_df.iloc[1:, new_column[1]] = ''
     return current_df
+
+def find_deference(list1,list2):
+    index_list= []
+    if len(list(set(list1)-set(list2))):
+        diff = list(set(list1)-set(list2))
+        index_list =[[i,list1.index(i)] for i in diff]
+        index_list.sort(key=lambda x:x[1])
+    return index_list
 
 def find_details_of_deferences(list1,list2):
     diff = list(set(list1).symmetric_difference(set(list2)))
@@ -278,6 +287,8 @@ def find_details_of_deferences(list1,list2):
             index_list1.append([i,list1.index(i)])
         elif i in list2:
             index_list2.append([i,list2.index(i)])
+    index_list1.sort(key=lambda x: x[1])
+    index_list2.sort(key=lambda x: x[1])
     return index_list1,index_list2
 
 def deal_with_strange_characters(series):
@@ -301,15 +312,15 @@ def execute_each_project_in_a_year(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('.xlsm' in file_name):
-                try:
+            if ('645' in file_name):
+                #try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
                     if (temp_file.check_available_result()):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
-                except Exception:
-                   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
+                # except Exception:
+                #    errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
         print 'Folder '+folder_name+' is empty'
     if (len(errors)>0):
