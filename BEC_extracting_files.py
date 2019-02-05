@@ -204,7 +204,8 @@ class BEC_project(object):
             extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False,nrows=1)
         # to see what makes different
             if current_df.iloc[0, :].astype(str).tolist() != extracted_df.iloc[0,:].astype(str).tolist():
-                if check_different(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0,:].astype(str).tolist())==False:
+                # Checking for missing headers in both dataframe
+                if check_different(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0,:].astype(str).tolist()):
                     extracted_df_index_missing = find_difference(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0,:].astype(str).tolist(),'missing')
                     if extracted_df_index_missing is not None and len(extracted_df_index_missing)>0:
                         extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,keep_default_na=False, header=None, index=False)
@@ -212,20 +213,23 @@ class BEC_project(object):
                             new_column[1] += extracted_df_index_missing.index(new_column)
                             extracted_df = fill_empty_value_into_blank_columns(new_column, extracted_df)
                         extracted_df.to_excel(self.out_put_folder + file_name + '.xlsx', file_name, header=False,index=False)
-                    extracted_df_index_different = find_difference(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0,:].astype(str).tolist(),'different')
-                    if extracted_df_index_missing is not None and len(extracted_df_index_different)>0:
+                if check_different(extracted_df.iloc[0,:].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist()):
+                    current_df_index_missing = find_difference(extracted_df.iloc[0, :].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist(), 'missing')
+                    if current_df_index_missing is not None and len(current_df_index_missing) > 0:
+                        for new_column in current_df_index_missing:
+                            new_column[1] += current_df_index_missing.index(new_column)
+                            current_df = fill_empty_value_into_blank_columns(new_column, current_df)
+                # Checking for different headers in both dataframe
+                if check_different(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0, :].astype(str).tolist()):
+                    extracted_df_index_different = find_difference(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0, :].astype(str).tolist(),'different')
+                    if extracted_df_index_different is not None and len(extracted_df_index_different)>0:
                         if (int(self.project_year)>2018):
                             for column in extracted_df_index_different:
                                 extracted_df.iloc[0,column[1]]=column[0]
                         else:
                             for column in extracted_df_index_different:
                                 current_df.iloc[0,column[1]]=extracted_df.iloc[0,column[1]]
-                else:
-                    current_df_index_missing=find_difference(extracted_df.iloc[0,:].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist(),'missing')
-                    if current_df_index_missing is not None and len(current_df_index_missing)>0:
-                        for new_column in current_df_index_missing:
-                            new_column[1] += current_df_index_missing.index(new_column)
-                            current_df = fill_empty_value_into_blank_columns(new_column, current_df)
+                if check_different(extracted_df.iloc[0, :].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist()):
                     current_df_index_different = find_difference(extracted_df.iloc[0,:].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist(),'different')
                     if current_df_index_different is not None and len(current_df_index_different) >0:
                         if (int(self.project_year)>2018):
@@ -302,7 +306,7 @@ def find_difference(list1,list2,flag):
     index_list_different, index_list_missing=None,None
     if len(list(set(list1)-set(list2))):
         diff = list(set(list1)-set(list2))
-        index_list_different =[[i,check_header(i,list2)[1]] for i in diff if check_header(i,list2)[0]=='different']
+        index_list_different =[[i,list1.index(i),check_header(i,list2)[1]] for i in diff if check_header(i,list2)[0]=='different']
         index_list_missing =[[i,list1.index(i)] for i in diff if check_header(i,list2)[0]=='missing']
         index_list_different.sort(key=lambda x:x[1])
         index_list_missing.sort(key=lambda x:x[1])
@@ -347,14 +351,14 @@ def execute_each_project_in_a_year(folder_name):
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
             if ('.xlsm' in file_name):
-                #try:
+                try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
                     if (temp_file.check_available_result()):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
-                #except Exception:
-                #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
+                except Exception:
+                  errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
         print 'Folder '+folder_name+' is empty'
     if (len(errors)>0):
