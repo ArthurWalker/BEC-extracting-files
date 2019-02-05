@@ -9,6 +9,7 @@ import time
 from tqdm import tqdm
 import openpyxl
 from openpyxl import load_workbook
+from fuzzywuzzy import fuzz
 
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
@@ -155,7 +156,7 @@ class BEC_project(object):
         TEMP_site_reference_df.insert(int(floor_area+1), 'Number', 'Num')
         TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,int(floor_area)].astype(str).str.replace(r'\d+(\.?)\d+','',regex=True)
         TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, int(floor_area)].astype(str).str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
-        TEMP_site_reference_df.update(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
+        TEMP_site_reference_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
         self.site_references=TEMP_site_reference_df
 
     # Function that controls extracting functions
@@ -203,19 +204,40 @@ class BEC_project(object):
             extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False,nrows=1)
         # to see what makes different
             if current_df.iloc[0, :].astype(str).tolist() != extracted_df.iloc[0,:].astype(str).tolist():
-                current_possition,extract_possition = find_details_of_deferences(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0,:].astype(str).tolist())
-                if len(extract_possition)>0:
-                    for new_column in extract_possition:
-                        if extract_possition.index(new_column) != 0:
-                           new_column[1] += 1
-                        current_df=fill_empty_value_into_blank_columns(new_column,current_df)
-                if len(current_possition) > 0:
-                    extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,keep_default_na=False, header=None, index=False)
-                    for new_column in current_possition:
-                        if current_possition.index(new_column)!=0:
-                           new_column[1]+=1
-                        extracted_df = fill_empty_value_into_blank_columns(new_column,extracted_df)
-                    extracted_df.to_excel(self.out_put_folder + file_name + '.xlsx', file_name, header=False,index=False)
+                # Checking for missing headers in both dataframe
+                if check_different(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0,:].astype(str).tolist()):
+                    extracted_df_index_missing = find_difference(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0,:].astype(str).tolist(),'missing')
+                    if extracted_df_index_missing is not None and len(extracted_df_index_missing)>0:
+                        extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,keep_default_na=False, header=None, index=False)
+                        for new_column in extracted_df_index_missing:
+                            new_column[1] += extracted_df_index_missing.index(new_column)
+                            extracted_df = fill_empty_value_into_blank_columns(new_column, extracted_df)
+                        extracted_df.to_excel(self.out_put_folder + file_name + '.xlsx', file_name, header=False,index=False)
+                if check_different(extracted_df.iloc[0,:].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist()):
+                    current_df_index_missing = find_difference(extracted_df.iloc[0, :].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist(), 'missing')
+                    if current_df_index_missing is not None and len(current_df_index_missing) > 0:
+                        for new_column in current_df_index_missing:
+                            new_column[1] += current_df_index_missing.index(new_column)
+                            current_df = fill_empty_value_into_blank_columns(new_column, current_df)
+                # Checking for different headers in both dataframe
+                if check_different(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0, :].astype(str).tolist()):
+                    extracted_df_index_different = find_difference(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0, :].astype(str).tolist(),'different')
+                    if extracted_df_index_different is not None and len(extracted_df_index_different)>0:
+                        if (int(self.project_year)>2018):
+                            for column in extracted_df_index_different:
+                                extracted_df.iloc[0,column[1]]=column[0]
+                        else:
+                            for column in extracted_df_index_different:
+                                current_df.iloc[0,column[1]]=extracted_df.iloc[0,column[1]]
+                if check_different(extracted_df.iloc[0, :].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist()):
+                    current_df_index_different = find_difference(extracted_df.iloc[0,:].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist(),'different')
+                    if current_df_index_different is not None and len(current_df_index_different) >0:
+                        if (int(self.project_year)>2018):
+                            for column in current_df_index_different:
+                                extracted_df.iloc[0,column[1]]=column[0]
+                        else:
+                            for column in current_df_index_different:
+                                current_df.iloc[0,column[1]]=extracted_df.iloc[0,column[1]]
             if  current_df.iloc[0, :].astype(str).tolist() == extracted_df.iloc[0,:].astype(str).tolist():
                 book = load_workbook(self.out_put_folder + file_name + '.xlsx')
                 writer = pd.ExcelWriter(self.out_put_folder + file_name + '.xlsx', engine='openpyxl')
@@ -263,11 +285,36 @@ class BEC_project(object):
         else:
             print 'Need to run extract_data() to execute input file to have results'
 
+def check_different(list1,list2):
+    if len(list(set(list1)-set(list2)))>0:
+        return True
+    return False
+
+def check_header(text,list_text):
+    for i in list_text:
+        if fuzz.ratio(i,text)>=95:
+            return ['different',list_text.index(i)]
+    return ['missing']
+
 def fill_empty_value_into_blank_columns(new_column,current_df):
-    current_df.insert(new_column[1], new_column[0], new_column[0])
+    current_df.insert(new_column[1], 'Empty Value', new_column[0])
     current_df.columns = [i for i in range(len(current_df.columns))]
     current_df.iloc[1:, new_column[1]] = ''
     return current_df
+
+def find_difference(list1,list2,flag):
+    index_list_different, index_list_missing=None,None
+    if len(list(set(list1)-set(list2))):
+        diff = list(set(list1)-set(list2))
+        index_list_different =[[i,list1.index(i),check_header(i,list2)[1]] for i in diff if check_header(i,list2)[0]=='different']
+        index_list_missing =[[i,list1.index(i)] for i in diff if check_header(i,list2)[0]=='missing']
+        index_list_different.sort(key=lambda x:x[1])
+        index_list_missing.sort(key=lambda x:x[1])
+    if (flag=='missing'):
+        return index_list_missing
+    if (flag=='different'):
+        return index_list_different
+    return
 
 def find_details_of_deferences(list1,list2):
     diff = list(set(list1).symmetric_difference(set(list2)))
@@ -278,6 +325,8 @@ def find_details_of_deferences(list1,list2):
             index_list1.append([i,list1.index(i)])
         elif i in list2:
             index_list2.append([i,list2.index(i)])
+    index_list1.sort(key=lambda x: x[1])
+    index_list2.sort(key=lambda x: x[1])
     return index_list1,index_list2
 
 def deal_with_strange_characters(series):
@@ -309,7 +358,7 @@ def execute_each_project_in_a_year(folder_name):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
                 except Exception:
-                   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
+                  errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
         print 'Folder '+folder_name+' is empty'
     if (len(errors)>0):
