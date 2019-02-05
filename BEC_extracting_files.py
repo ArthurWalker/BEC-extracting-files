@@ -255,9 +255,9 @@ class BEC_project(object):
 
     # Add data into an excel file
     def add_project(self):
-        if not os.path.exists(path+'BEC 2018 Shared Data/'):
-            os.makedirs(path+'BEC 2018 Shared Data/')
-        self.out_put_folder= path+'BEC 2018 Shared Data/'
+        if not os.path.exists(path+'BEC '+self.project_year+' Shared Data/'):
+            os.makedirs(path+'BEC '+self.project_year+' Shared Data/')
+        self.out_put_folder= path+'BEC '+self.project_year+' Shared Data/'
         self.write_files(self.project_summary_dataframe,'Project Summary')
         if (self.beneficiary_dataframe is not None):
             self.write_files(self.beneficiary_dataframe,'Beneficiary')
@@ -365,10 +365,15 @@ def execute_each_project_in_a_year(folder_name):
        print ''
        print 'Errors: ',errors
 
+def working_with_folder():
+    folder_list = os.listdir(path)
+    for folder_name in folder_list:
+        if re.search(r'^BEC \d+$',folder_name):
+            execute_each_project_in_a_year(folder_name)
+
 def main():
     start_time = time.time()
-    folder_name = 'BEC 2018'
-    execute_each_project_in_a_year(folder_name)
+    working_with_folder()
     print 'Done! from ', time.asctime( time.localtime(start_time)),' to ',time.asctime( time.localtime(time.time()))
 
 if __name__=='__main__':
