@@ -362,7 +362,7 @@ def execute_each_project_in_a_year(folder_name):
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list:
-        if re.search(r'^BEC \d+$',folder_name):
+        if re.search(r'^BEC \d+$',folder_name) and folder_name=='BEC 2018':
             execute_each_project_in_a_year(folder_name)
 
 def main():
