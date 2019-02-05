@@ -85,6 +85,7 @@ class BEC_project(object):
             TEMP_data_project_summary1 = TEMP_data_project_summary1.drop(self.empty_line,axis=0).reset_index(drop=True)
             if (len(TEMP_data_project_summary1.iloc[:,3].unique())==1 and TEMP_data_project_summary1.iloc[:,3].unique()[0]==u' '):
                 TEMP_data_project_summary1.drop(4,axis=1,inplace=True)
+            TEMP_data_project_summary1.iloc[1:,3:]=TEMP_data_project_summary1.iloc[1:,3:].fillna(0)
             TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:, 3:] * 100).astype(int))
             TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Automatically_brought[-1]-1:list_Add_addition_row[0],18:21].drop([list_Values_Automatically_brought[-1],list_Values_Automatically_brought[-1]+1],axis=0).reset_index(drop=True)
             TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
@@ -352,7 +353,7 @@ def execute_each_project_in_a_year(folder_name):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
                 except Exception:
-                  errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
+                    errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
         print ('Folder '+folder_name+' is empty')
     if (len(errors)>0):
@@ -362,13 +363,31 @@ def execute_each_project_in_a_year(folder_name):
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list:
-        if re.search(r'^BEC \d+$',folder_name) and folder_name=='BEC 2018':
+        if re.search(r'^BEC \d+$',folder_name):
+            print ('Checking folder',folder_name)
             execute_each_project_in_a_year(folder_name)
 
+def extract_randomly_data():
+    selected_folder = input('Choose folder to select: ')
+    selected_file = input('Choose file to select: ')
+    extracted_headers = pd.read_excel(path + selected_folder+' Shared Data/' + selected_file + '.xlsx', selected_file,
+                                      keep_default_na=False, header=None, index=False, nrows=1)
+    extracted_data = pd.read_excel(path + selected_folder+' Shared Data/' + selected_file + '.xlsx', selected_file,
+                                   keep_default_na=False, header=None, index=False)
+    numb_of_rand_data = int(input('Number of data points: '))
+    random_selected_data = extracted_data.iloc[1:, :].sample(numb_of_rand_data)
+    result = extracted_headers.append(random_selected_data)
+    result.to_excel(selected_folder+' '+selected_file + ' ' + str(numb_of_rand_data) + ' searching results.xlsx', header=False, index=False)
+    print('Done!')
+
 def main():
-    start_time = time.time()
-    working_with_folder()
-    print ('Done! from ', time.asctime( time.localtime(start_time)),' to ',time.asctime( time.localtime(time.time())))
+    option = input('Choose your task (1 for executing files or 2 for randomly selecting data points): ')
+    if (option == '1'):
+        start_time = time.time()
+        working_with_folder()
+        print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',time.asctime(time.localtime(time.time())))
+    else:
+        extract_randomly_data()
 
 if __name__=='__main__':
     main()
