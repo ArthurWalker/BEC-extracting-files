@@ -38,17 +38,17 @@ class BEC_Non_Domestic(object):
         return self.data_site_measures,self.data_site_reference
 
     def print_input_sheet_content(self):
-        print 'File name: ',self.fileName
-        print 'Sheet name: ',self.sheetName
-        print self.sheet
+        print ('File name: ',self.fileName)
+        print ('Sheet name: ',self.sheetName)
+        print (self.sheet)
 
     def print_output_sheet_content(self):
-        print ''
-        print 'Data of site reference: '
-        print self.data_site_reference
-        print ''
-        print 'Data of site measures: '
-        print self.data_site_measures
+        print ('')
+        print ('Data of site reference: ')
+        print (self.data_site_reference)
+        print ('')
+        print ('Data of site measures: ')
+        print (self.data_site_measures)
 
 class BEC_project(object):
     def __init__(self,folder,file):
@@ -85,9 +85,6 @@ class BEC_project(object):
             TEMP_data_project_summary1 = TEMP_data_project_summary1.drop(self.empty_line,axis=0).reset_index(drop=True)
             if (len(TEMP_data_project_summary1.iloc[:,3].unique())==1 and TEMP_data_project_summary1.iloc[:,3].unique()[0]==u' '):
                 TEMP_data_project_summary1.drop(4,axis=1,inplace=True)
-            # else:
-            #     TEMP_data_project_summary1.iloc[0,3]+=' (%)'
-            # TEMP_data_project_summary1.iloc[0, 3] += ' (%)'
             TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:, 3:] * 100).astype(int))
             TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Automatically_brought[-1]-1:list_Add_addition_row[0],18:21].drop([list_Values_Automatically_brought[-1],list_Values_Automatically_brought[-1]+1],axis=0).reset_index(drop=True)
             TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
@@ -97,10 +94,9 @@ class BEC_project(object):
             data_project_summary.iloc[0,1]='Tab'
             data_project_summary.insert(0, '-2', self.project_year)
             data_project_summary.iloc[0, 0] = 'Year'
-            #data_project_summary.update(deal_with_strange_characters(data_project_summary.iloc[0,:]))
             self.project_summary_dataframe=data_project_summary
         else:
-            print 'Can not identify as there are more "Add additional rows as required" or no results'
+            print ('Can not identify as there are more "Add additional rows as required" or no results')
 
     # Extract beneficiary data
     def extract_beneficiary_data(self):
@@ -168,7 +164,6 @@ class BEC_project(object):
 
     # Checking if attributes are available or not
     def check_available_result(self):
-        #if (self.project_summary_dataframe is not None and self.beneficiary_dataframe is not None  and self.site_references is not None  and self.site_measures.shape[0] is not None ):
         if (self.project_summary_dataframe is not None and self.site_references is not None and self.site_measures.shape[0] is not None):
             return True
         else:
@@ -200,7 +195,6 @@ class BEC_project(object):
         # Tab
             dataframe.columns=[i for i in range(len(dataframe.columns))]
             current_df = dataframe
-            #current_df = dataframe.rename(columns=dataframe.iloc[0]).drop(dataframe.index[0])
             extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False,nrows=1)
         # to see what makes different
             if current_df.iloc[0, :].astype(str).tolist() != extracted_df.iloc[0,:].astype(str).tolist():
@@ -265,25 +259,25 @@ class BEC_project(object):
         self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
-        print self.bec_file.sheet_names
+        print (self.bec_file.sheet_names)
 
     def print_original_sheet(self):
         for sheetName in self.bec_file.sheet_names:
             if ('Non Domestic' in sheetName):
                 self.BEC_worksheet[sheetName].print_input_sheet_content()
             elif ('Project Summary' == sheetName or 'Beneficiary' == sheetName):
-                print 'File name: ', self.project_name
-                print 'Sheet name: ', sheetName
-                print self.BEC_worksheet[sheetName]
+                print ('File name: ', self.project_name)
+                print ('Sheet name: ', sheetName)
+                print (self.BEC_worksheet[sheetName])
 
     def print_output_sheets(self):
         if self.check_available_result():
-            print 'Project summary',self.project_summary_dataframe
-            print 'Beneficiary', self.beneficiary_dataframe
-            print 'Site references', self.site_references
-            print 'Site measures', self.site_measures
+            print ('Project summary',self.project_summary_dataframe)
+            print ('Beneficiary', self.beneficiary_dataframe)
+            print ('Site references', self.site_references)
+            print ('Site measures', self.site_measures)
         else:
-            print 'Need to run extract_data() to execute input file to have results'
+            print ('Need to run extract_data() to execute input file to have results')
 
 def check_different(list1,list2):
     if len(list(set(list1)-set(list2)))>0:
@@ -360,10 +354,10 @@ def execute_each_project_in_a_year(folder_name):
                 except Exception:
                   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
-        print 'Folder '+folder_name+' is empty'
+        print ('Folder '+folder_name+' is empty')
     if (len(errors)>0):
-       print ''
-       print 'Errors: ',errors
+       print ('')
+       print ('Errors: ',errors)
 
 def working_with_folder():
     folder_list = os.listdir(path)
@@ -374,7 +368,7 @@ def working_with_folder():
 def main():
     start_time = time.time()
     working_with_folder()
-    print 'Done! from ', time.asctime( time.localtime(start_time)),' to ',time.asctime( time.localtime(time.time()))
+    print ('Done! from ', time.asctime( time.localtime(start_time)),' to ',time.asctime( time.localtime(time.time())))
 
 if __name__=='__main__':
     main()
