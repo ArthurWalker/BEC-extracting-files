@@ -38,17 +38,17 @@ class BEC_Non_Domestic(object):
         return self.data_site_measures,self.data_site_reference
 
     def print_input_sheet_content(self):
-        print 'File name: ',self.fileName
-        print 'Sheet name: ',self.sheetName
-        print self.sheet
+        print ('File name: ',self.fileName)
+        print ('Sheet name: ',self.sheetName)
+        print (self.sheet)
 
     def print_output_sheet_content(self):
-        print ''
-        print 'Data of site reference: '
-        print self.data_site_reference
-        print ''
-        print 'Data of site measures: '
-        print self.data_site_measures
+        print ('')
+        print ('Data of site reference: ')
+        print (self.data_site_reference)
+        print ('')
+        print ('Data of site measures: ')
+        print (self.data_site_measures)
 
 class BEC_project(object):
     def __init__(self,folder,file):
@@ -85,9 +85,7 @@ class BEC_project(object):
             TEMP_data_project_summary1 = TEMP_data_project_summary1.drop(self.empty_line,axis=0).reset_index(drop=True)
             if (len(TEMP_data_project_summary1.iloc[:,3].unique())==1 and TEMP_data_project_summary1.iloc[:,3].unique()[0]==u' '):
                 TEMP_data_project_summary1.drop(4,axis=1,inplace=True)
-            # else:
-            #     TEMP_data_project_summary1.iloc[0,3]+=' (%)'
-            # TEMP_data_project_summary1.iloc[0, 3] += ' (%)'
+            TEMP_data_project_summary1.iloc[1:,3:]=TEMP_data_project_summary1.iloc[1:,3:].fillna(0)
             TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:, 3:] * 100).astype(int))
             TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Automatically_brought[-1]-1:list_Add_addition_row[0],18:21].drop([list_Values_Automatically_brought[-1],list_Values_Automatically_brought[-1]+1],axis=0).reset_index(drop=True)
             TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
@@ -97,10 +95,9 @@ class BEC_project(object):
             data_project_summary.iloc[0,1]='Tab'
             data_project_summary.insert(0, '-2', self.project_year)
             data_project_summary.iloc[0, 0] = 'Year'
-            #data_project_summary.update(deal_with_strange_characters(data_project_summary.iloc[0,:]))
             self.project_summary_dataframe=data_project_summary
         else:
-            print 'Can not identify as there are more "Add additional rows as required" or no results'
+            print ('Can not identify as there are more "Add additional rows as required" or no results')
 
     # Extract beneficiary data
     def extract_beneficiary_data(self):
@@ -140,7 +137,7 @@ class BEC_project(object):
         TEMP_site_measures_df.iloc[0,1]='Project Code'
         TEMP_site_measures_df.iloc[0,2]='Tab'
         TEMP_site_measures_df.iloc[0,3]='ID Measures'
-        TEMP_site_measures_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_measures_df.iloc[0, 16:20]))
+        #TEMP_site_measures_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_measures_df.iloc[0, 16:20]))
         self.site_measures = TEMP_site_measures_df
     #Non Domestic Reference
         TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True)
@@ -156,7 +153,7 @@ class BEC_project(object):
         TEMP_site_reference_df.insert(int(floor_area+1), 'Number', 'Num')
         TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,int(floor_area)].astype(str).str.replace(r'\d+(\.?)\d+','',regex=True)
         TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, int(floor_area)].astype(str).str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
-        TEMP_site_reference_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
+        #TEMP_site_reference_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
         self.site_references=TEMP_site_reference_df
 
     # Function that controls extracting functions
@@ -168,7 +165,6 @@ class BEC_project(object):
 
     # Checking if attributes are available or not
     def check_available_result(self):
-        #if (self.project_summary_dataframe is not None and self.beneficiary_dataframe is not None  and self.site_references is not None  and self.site_measures.shape[0] is not None ):
         if (self.project_summary_dataframe is not None and self.site_references is not None and self.site_measures.shape[0] is not None):
             return True
         else:
@@ -200,7 +196,6 @@ class BEC_project(object):
         # Tab
             dataframe.columns=[i for i in range(len(dataframe.columns))]
             current_df = dataframe
-            #current_df = dataframe.rename(columns=dataframe.iloc[0]).drop(dataframe.index[0])
             extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name, keep_default_na=False,header=None, index=False,nrows=1)
         # to see what makes different
             if current_df.iloc[0, :].astype(str).tolist() != extracted_df.iloc[0,:].astype(str).tolist():
@@ -255,9 +250,9 @@ class BEC_project(object):
 
     # Add data into an excel file
     def add_project(self):
-        if not os.path.exists(path+'BEC 2018 Shared Data/'):
-            os.makedirs(path+'BEC 2018 Shared Data/')
-        self.out_put_folder= path+'BEC 2018 Shared Data/'
+        if not os.path.exists(path+'BEC '+self.project_year+' Shared Data/'):
+            os.makedirs(path+'BEC '+self.project_year+' Shared Data/')
+        self.out_put_folder= path+'BEC '+self.project_year+' Shared Data/'
         self.write_files(self.project_summary_dataframe,'Project Summary')
         if (self.beneficiary_dataframe is not None):
             self.write_files(self.beneficiary_dataframe,'Beneficiary')
@@ -265,25 +260,25 @@ class BEC_project(object):
         self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
-        print self.bec_file.sheet_names
+        print (self.bec_file.sheet_names)
 
     def print_original_sheet(self):
         for sheetName in self.bec_file.sheet_names:
             if ('Non Domestic' in sheetName):
                 self.BEC_worksheet[sheetName].print_input_sheet_content()
             elif ('Project Summary' == sheetName or 'Beneficiary' == sheetName):
-                print 'File name: ', self.project_name
-                print 'Sheet name: ', sheetName
-                print self.BEC_worksheet[sheetName]
+                print ('File name: ', self.project_name)
+                print ('Sheet name: ', sheetName)
+                print (self.BEC_worksheet[sheetName])
 
     def print_output_sheets(self):
         if self.check_available_result():
-            print 'Project summary',self.project_summary_dataframe
-            print 'Beneficiary', self.beneficiary_dataframe
-            print 'Site references', self.site_references
-            print 'Site measures', self.site_measures
+            print ('Project summary',self.project_summary_dataframe)
+            print ('Beneficiary', self.beneficiary_dataframe)
+            print ('Site references', self.site_references)
+            print ('Site measures', self.site_measures)
         else:
-            print 'Need to run extract_data() to execute input file to have results'
+            print ('Need to run extract_data() to execute input file to have results')
 
 def check_different(list1,list2):
     if len(list(set(list1)-set(list2)))>0:
@@ -330,7 +325,7 @@ def find_details_of_deferences(list1,list2):
     return index_list1,index_list2
 
 def deal_with_strange_characters(series):
-    series=series.apply(lambda x:x.encode('utf-8').decode('utf-8')[:-1])
+    series=series.apply(lambda x:x.encode('utf-8').decode('utf-8'))
     return series
 
 def unprotect_xlsm_file(path,filename):
@@ -358,18 +353,42 @@ def execute_each_project_in_a_year(folder_name):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
                 except Exception:
-                  errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
+                    errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
-        print 'Folder '+folder_name+' is empty'
+        print ('Folder '+folder_name+' is empty')
     if (len(errors)>0):
-       print ''
-       print 'Errors: ',errors
+       print ('')
+       print ('Errors: ',errors)
+
+def working_with_folder():
+    folder_list = os.listdir(path)
+    folder_list.reverse()
+    for folder_name in folder_list:
+        if re.search(r'^BEC \d+$',folder_name):
+            print ('Checking folder',folder_name)
+            execute_each_project_in_a_year(folder_name)
+
+def extract_randomly_data():
+    selected_folder = input('Choose folder to select: ')
+    selected_file = input('Choose file to select: ')
+    extracted_headers = pd.read_excel(path + selected_folder+' Shared Data/' + selected_file + '.xlsx', selected_file,
+                                      keep_default_na=False, header=None, index=False, nrows=1)
+    extracted_data = pd.read_excel(path + selected_folder+' Shared Data/' + selected_file + '.xlsx', selected_file,
+                                   keep_default_na=False, header=None, index=False)
+    numb_of_rand_data = int(input('Number of data points: '))
+    random_selected_data = extracted_data.iloc[1:, :].sample(numb_of_rand_data)
+    result = extracted_headers.append(random_selected_data)
+    result.to_excel(selected_folder+' '+selected_file + ' ' + str(numb_of_rand_data) + ' searching results.xlsx', header=False, index=False)
+    print('Done!')
 
 def main():
-    start_time = time.time()
-    folder_name = 'BEC 2018'
-    execute_each_project_in_a_year(folder_name)
-    print 'Done! from ', time.asctime( time.localtime(start_time)),' to ',time.asctime( time.localtime(time.time()))
+    option = input('Choose your task (1 for executing files or 2 for randomly selecting data points): ')
+    if (option == '1'):
+        start_time = time.time()
+        working_with_folder()
+        print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',time.asctime(time.localtime(time.time())))
+    else:
+        extract_randomly_data()
 
 if __name__=='__main__':
     main()
