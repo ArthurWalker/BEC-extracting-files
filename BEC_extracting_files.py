@@ -137,7 +137,7 @@ class BEC_project(object):
         TEMP_site_measures_df.iloc[0,1]='Project Code'
         TEMP_site_measures_df.iloc[0,2]='Tab'
         TEMP_site_measures_df.iloc[0,3]='ID Measures'
-        TEMP_site_measures_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_measures_df.iloc[0, 16:20]))
+        #TEMP_site_measures_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_measures_df.iloc[0, 16:20]))
         self.site_measures = TEMP_site_measures_df
     #Non Domestic Reference
         TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True)
@@ -153,7 +153,7 @@ class BEC_project(object):
         TEMP_site_reference_df.insert(int(floor_area+1), 'Number', 'Num')
         TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,int(floor_area)].astype(str).str.replace(r'\d+(\.?)\d+','',regex=True)
         TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, int(floor_area)].astype(str).str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
-        TEMP_site_reference_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
+        #TEMP_site_reference_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
         self.site_references=TEMP_site_reference_df
 
     # Function that controls extracting functions
@@ -325,7 +325,7 @@ def find_details_of_deferences(list1,list2):
     return index_list1,index_list2
 
 def deal_with_strange_characters(series):
-    series=series.apply(lambda x:x.encode('utf-8').decode('utf-8')[:-1])
+    series=series.apply(lambda x:x.encode('utf-8').decode('utf-8'))
     return series
 
 def unprotect_xlsm_file(path,filename):
@@ -362,6 +362,7 @@ def execute_each_project_in_a_year(folder_name):
 
 def working_with_folder():
     folder_list = os.listdir(path)
+    folder_list.reverse()
     for folder_name in folder_list:
         if re.search(r'^BEC \d+$',folder_name):
             print ('Checking folder',folder_name)
