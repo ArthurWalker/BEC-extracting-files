@@ -75,32 +75,36 @@ class BEC_project(object):
     #Extract project summary data
     def extract_summary_data(self):
         TEMP_dataframe = self.BEC_worksheet['Project Summary'].iloc[:,1].astype(str)
-        # TEMP_dataframe.replace('',np.nan,inplace=True)
-        # TEMP_dataframe.replace(r'^\d+$', np.nan, inplace=True, regex=True)
-        # TEMP_dataframe.dropna(inplace=True)
         TEMP_dataframe2 = self.BEC_worksheet['Project Summary'].iloc[:,0].astype(str)
-        TEMP_dataframe2.replace('', np.nan, inplace=True)
-        TEMP_dataframe2.replace(r'^\d+$', np.nan, inplace=True,regex=True)
-        TEMP_dataframe2.dropna(inplace=True)
-        list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs =TEMP_dataframe2[TEMP_dataframe2.str.contains('Better Energy Communities Programme - Non Domestic Costs')].index.tolist()
-        #list_Values_Automatically_brought = TEMP_dataframe[TEMP_dataframe.str.contains('Values automatically brought in from "Non Domestic ')].index.tolist()
+        # If you want to remove unnecessary data
+        # TEMP_dataframe2.replace('', np.nan, inplace=True)
+        # TEMP_dataframe2.replace(r'^\d+$', np.nan, inplace=True,regex=True)
+        # TEMP_dataframe2.dropna(inplace=True)
+        list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs =TEMP_dataframe2[TEMP_dataframe2.str.contains('Better Energy Communities Programme - Non Domestic Costs',na=False)].index.tolist()
         list_Add_addition_row = TEMP_dataframe[TEMP_dataframe=='Add additional rows as required'].index.tolist()
         if (len(list_Add_addition_row)==1):
             if int(self.project_year) >=2017:
                 column_to_collect = 6
             else:
                 column_to_collect = 4
+            # Get data of the first half of requested table
             TEMP_data_project_summary1 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+2:list_Add_addition_row[0], 0:column_to_collect].reset_index(drop=True).drop(3,axis=1)
             list_0 = TEMP_data_project_summary1[TEMP_data_project_summary1.iloc[:,1] == 0].index.tolist()
             list_empty = TEMP_data_project_summary1[TEMP_data_project_summary1[2]==''].index.tolist()
             self.empty_line=list_0+list_empty
             TEMP_data_project_summary1 = TEMP_data_project_summary1.drop(self.empty_line,axis=0).reset_index(drop=True)
-            if (len(TEMP_data_project_summary1.iloc[:,3].unique())==1 and TEMP_data_project_summary1.iloc[:,3].unique()[0]==u' '):
-                TEMP_data_project_summary1.drop(4,axis=1,inplace=True)
-            TEMP_data_project_summary1.iloc[1:,3:]=TEMP_data_project_summary1.iloc[1:,3:].fillna(0)
-            TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:, 3:] * 100).astype(int))
-            TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]:list_Add_addition_row[0],18:21].drop([list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1],list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]],axis=0).reset_index(drop=True)
+            if int(self.project_year) >=2017:
+                # Convert % num to numemric
+                if (len(TEMP_data_project_summary1.iloc[:,3].unique())==1 and TEMP_data_project_summary1.iloc[:,3].unique()[0]==u' '):
+                    TEMP_data_project_summary1.drop(4,axis=1,inplace=True)
+                TEMP_data_project_summary1.iloc[1:,3:]=TEMP_data_project_summary1.iloc[1:,3:].fillna(0)
+                TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:, 3:] * 100).astype(int))
+            # Get data of the second half of requested table
+            header_line_boolean = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]].astype(str).isin(['Total Project Cost','SEAI funding','Eligible VAT','SEAI Funding'])
+            header_line_index = header_line_boolean[header_line_boolean==True].index.tolist()
+            TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]:list_Add_addition_row[0],header_line_index].drop([list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+1,list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+2],axis=0).reset_index(drop=True)
             TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
+            # Merge 2 tables into 1
             data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1)
             data_project_summary.insert(0,'-1',self.project_name)
             data_project_summary.iloc[0,0]='Project Code'
