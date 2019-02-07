@@ -55,7 +55,7 @@ class BEC_project(object):
         self.file_name = file
         self.input_folder= path+folder+'/'
         self.out_put_folder = ''
-        self.project_name = re.search(r'BEC(\s?)\d+',file).group()
+        self.project_name = re.search(r'BEC(\s|\_?)\d+(\s?)\d+',file).group()
         self.project_year = re.search(r'\d+',self.input_folder).group()
         self.bec_file = pd.ExcelFile(self.input_folder+file)
         self.BEC_worksheet={}
@@ -82,6 +82,8 @@ class BEC_project(object):
         # TEMP_dataframe2.dropna(inplace=True)
         list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs =TEMP_dataframe2[TEMP_dataframe2.str.contains('Better Energy Communities Programme - Non Domestic Costs',na=False)].index.tolist()
         list_Add_addition_row = TEMP_dataframe[TEMP_dataframe=='Add additional rows as required'].index.tolist()
+        if len(list_Add_addition_row)==0:
+            list_Add_addition_row = TEMP_dataframe2[TEMP_dataframe2.str.contains('Better Energy Communities Programme - Domestic Costs',na=False)].index.tolist()
         if (len(list_Add_addition_row)==1):
             if int(self.project_year) >=2017:
                 column_to_collect = 6
@@ -102,6 +104,8 @@ class BEC_project(object):
             # Get data of the second half of requested table
             header_line_boolean = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]].astype(str).isin(['Total Project Cost','SEAI funding','Eligible VAT','SEAI Funding'])
             header_line_index = header_line_boolean[header_line_boolean==True].index.tolist()
+            if int(self.project_year)==2016:
+                header_line_index = header_line_index[:-1]
             TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]:list_Add_addition_row[0],header_line_index].drop([list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+1,list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+2],axis=0).reset_index(drop=True)
             TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
             # Merge 2 tables into 1
@@ -221,14 +225,14 @@ class BEC_project(object):
                     if extracted_df_index_missing is not None and len(extracted_df_index_missing)>0:
                         extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,keep_default_na=False, header=None, index=False)
                         for new_column in extracted_df_index_missing:
-                            new_column[1] += extracted_df_index_missing.index(new_column)
+                            #new_column[1] += extracted_df_index_missing.index(new_column)
                             extracted_df = fill_empty_value_into_blank_columns(new_column, extracted_df)
                         extracted_df.to_excel(self.out_put_folder + file_name + '.xlsx', file_name, header=False,index=False)
                 if check_different(extracted_df.iloc[0,:].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist()):
                     current_df_index_missing = find_difference(extracted_df.iloc[0, :].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist(), 'missing')
                     if current_df_index_missing is not None and len(current_df_index_missing) > 0:
                         for new_column in current_df_index_missing:
-                            new_column[1] += current_df_index_missing.index(new_column)
+                            #new_column[1] += current_df_index_missing.index(new_column)
                             current_df = fill_empty_value_into_blank_columns(new_column, current_df)
                 # Checking for different headers in both dataframe
                 if check_different(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0, :].astype(str).tolist()):
@@ -266,12 +270,12 @@ class BEC_project(object):
 
     # Add data into an excel file
     def add_project(self):
-        if not os.path.exists(path + 'BEC ' + self.project_year + ' Shared Data/'):
-            os.makedirs(path + 'BEC ' + self.project_year + ' Shared Data/')
-        self.out_put_folder = path + 'BEC ' + self.project_year + ' Shared Data/'
-        # if not os.path.exists(path+'BEC Shared Data/'):
-        #     os.makedirs(path+'BEC Shared Data/')
-        # self.out_put_folder= path+'BEC Shared Data/'
+        # if not os.path.exists(path + 'BEC ' + self.project_year + ' Shared Data/'):
+        #     os.makedirs(path + 'BEC ' + self.project_year + ' Shared Data/')
+        # self.out_put_folder = path + 'BEC ' + self.project_year + ' Shared Data/'
+        if not os.path.exists(path+'BEC Shared Data/'):
+            os.makedirs(path+'BEC Shared Data/')
+        self.out_put_folder= path+'BEC Shared Data/'
         self.write_files(self.project_summary_dataframe,'Project Summary')
         if (self.beneficiary_dataframe is not None):
             self.write_files(self.beneficiary_dataframe,'Beneficiary')
@@ -306,7 +310,7 @@ def check_different(list1,list2):
 
 def check_header(text,list_text):
     for i in list_text:
-        if fuzz.ratio(i,text)>=95:
+        if fuzz.ratio(i,text)>=92:
             return ['different',list_text.index(i)]
     return ['missing']
 
@@ -382,7 +386,7 @@ def execute_each_project_in_a_year(folder_name):
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list[::-1]:
-        if re.search(r'^BEC \d+$',folder_name) and folder_name=='BEC 2018':
+        if re.search(r'^BEC \d+$',folder_name):
             print ('Checking folder',folder_name)
             execute_each_project_in_a_year(folder_name)
 
