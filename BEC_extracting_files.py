@@ -250,9 +250,12 @@ class BEC_project(object):
 
     # Add data into an excel file
     def add_project(self):
-        if not os.path.exists(path+'BEC '+self.project_year+' Shared Data/'):
-            os.makedirs(path+'BEC '+self.project_year+' Shared Data/')
-        self.out_put_folder= path+'BEC '+self.project_year+' Shared Data/'
+        if not os.path.exists(path + 'BEC ' + self.project_year + ' Shared Data/'):
+            os.makedirs(path + 'BEC ' + self.project_year + ' Shared Data/')
+        self.out_put_folder = path + 'BEC ' + self.project_year + ' Shared Data/'
+        # if not os.path.exists(path+'BEC Shared Data/'):
+        #     os.makedirs(path+'BEC Shared Data/')
+        # self.out_put_folder= path+'BEC Shared Data/'
         self.write_files(self.project_summary_dataframe,'Project Summary')
         if (self.beneficiary_dataframe is not None):
             self.write_files(self.beneficiary_dataframe,'Beneficiary')
@@ -346,14 +349,14 @@ def execute_each_project_in_a_year(folder_name):
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
             if ('.xlsm' in file_name):
-                try:
+                #try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
                     if (temp_file.check_available_result()):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
-                except Exception:
-                    errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
+                #except Exception:
+                #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
     else:
         print ('Folder '+folder_name+' is empty')
     if (len(errors)>0):
@@ -362,9 +365,8 @@ def execute_each_project_in_a_year(folder_name):
 
 def working_with_folder():
     folder_list = os.listdir(path)
-    folder_list.reverse()
-    for folder_name in folder_list:
-        if re.search(r'^BEC \d+$',folder_name):
+    for folder_name in folder_list[::-1]:
+        if re.search(r'^BEC \d+$',folder_name) and folder_name=='BEC 2016':
             print ('Checking folder',folder_name)
             execute_each_project_in_a_year(folder_name)
 
@@ -382,7 +384,8 @@ def extract_randomly_data():
     print('Done!')
 
 def main():
-    option = input('Choose your task (1 for executing files or 2 for randomly selecting data points): ')
+    #option = input('Choose your task (1 for executing files or 2 for randomly selecting data points): ')
+    option='1'
     if (option == '1'):
         start_time = time.time()
         working_with_folder()
