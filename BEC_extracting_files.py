@@ -116,7 +116,7 @@ class BEC_project(object):
             header_line_boolean = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]].astype(str).isin(['Total Project Cost','SEAI funding','Eligible VAT','SEAI Funding'])
             header_line_index = header_line_boolean[header_line_boolean==True].index.tolist()
             if int(self.project_year)==2016:
-                header_line_index = header_line_index[:-1]
+                header_line_index = header_line_index[:3]
             TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]:list_Add_addition_row[0],header_line_index].drop([list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+1,list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+2],axis=0).reset_index(drop=True)
             TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
             # Merge 2 tables into 1
@@ -288,10 +288,10 @@ class BEC_project(object):
             os.makedirs(path+'BEC Shared Data/')
         self.out_put_folder= path+'BEC Shared Data/'
         self.write_files(self.project_summary_dataframe,'Project Summary')
-        if (self.beneficiary_dataframe is not None):
-            self.write_files(self.beneficiary_dataframe,'Beneficiary')
-        self.write_files(self.site_measures,'Site Measures')
-        self.write_files(self.site_references,'Site References')
+        # if (self.beneficiary_dataframe is not None):
+        #     self.write_files(self.beneficiary_dataframe,'Beneficiary')
+        # self.write_files(self.site_measures,'Site Measures')
+        # self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
         print (self.bec_file.sheet_names)
@@ -379,7 +379,7 @@ def execute_each_project_in_a_year(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('.xlsm' in file_name):
+            if ('.xlsm' in file_name)and '534' in file_name:
                 try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
@@ -397,7 +397,7 @@ def execute_each_project_in_a_year(folder_name):
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list[::-1]:
-        if re.search(r'^BEC \d+$',folder_name):
+        if re.search(r'^BEC \d+$',folder_name) and folder_name=='BEC 2016':
             print ('Checking folder',folder_name)
             execute_each_project_in_a_year(folder_name)
 
