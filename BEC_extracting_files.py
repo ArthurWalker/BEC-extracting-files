@@ -43,7 +43,7 @@ class BEC_Non_Domestic(object):
         TEMP_data_site_measures_proposed_energy_upgrades =self.sheet.iloc[proposed_engergy_upgrade_index+1:25,0:extracted_column_index_for_site_measures_energy_upgrades].reset_index(drop=True).drop(columns_to_drop_energy,axis=1)
         columns_to_drop_unit = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:].isin(['Milestone','Invoice'])].index.tolist()
         last_column_unit = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:]=='Energy Credits'].index.tolist()[-1]
-        TEMP_data_site_measures_unit = self.sheet.iloc[proposed_engergy_upgrade_index:25, extracted_column_index_for_site_measures_energy_upgrades:last_column_unit].drop(proposed_engergy_upgrade_index+1,axis=0).reset_index(drop=True).drop(columns_to_drop_unit,axis=1)
+        TEMP_data_site_measures_unit = self.sheet.iloc[proposed_engergy_upgrade_index:25, extracted_column_index_for_site_measures_energy_upgrades:last_column_unit+1].drop(proposed_engergy_upgrade_index+1,axis=0).reset_index(drop=True).drop(columns_to_drop_unit,axis=1)
         TEMP_data_site_measures = pd.concat([TEMP_data_site_measures_proposed_energy_upgrades,TEMP_data_site_measures_unit],axis=1,sort=False)
         self.data_site_measures = TEMP_data_site_measures.loc[~TEMP_data_site_measures[0].astype(str).isin(['Total','','-',' '])]
         return [self.data_site_measures,self.data_site_reference]
@@ -379,7 +379,7 @@ def execute_each_project_in_a_year(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('.xlsm' in file_name or '.xlsx' in file_name or '.xls' in file_name):
+            if ('.xlsm' in file_name or '.xlsx' in file_name or '.xls' in file_name) and '821' in file_name:
                 try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
