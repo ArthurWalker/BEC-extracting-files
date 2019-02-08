@@ -379,15 +379,15 @@ def execute_each_project_in_a_year(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('.xlsm' in file_name) and '749' in file_name :
-                #try:
+            if ('.xlsm' in file_name):
+                try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
                     if (temp_file.check_available_result()):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
-                #except Exception:
-                #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
+                except Exception:
+                   errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
     else:
         print ('Folder '+folder_name+' is empty')
     if (len(errors)>0):
@@ -397,7 +397,7 @@ def execute_each_project_in_a_year(folder_name):
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list[::-1]:
-        if re.search(r'^BEC \d+$',folder_name) and folder_name=='BEC 2018':
+        if re.search(r'^BEC \d+$',folder_name):
             print ('Checking folder',folder_name)
             execute_each_project_in_a_year(folder_name)
 
