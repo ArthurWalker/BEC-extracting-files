@@ -14,28 +14,39 @@ from fuzzywuzzy import fuzz
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 class BEC_Non_Domestic(object):
-    def __init__(self,bec_file,sheetName,project_name,file_name):
+    def __init__(self,bec_file,sheetName,project_name,file_name,tab):
         self.fileName = file_name
         self.project_name=project_name
         self.sheetName= sheetName
+        self.tab=tab
         self.sheet = pd.read_excel(bec_file,sheetName,keep_default_na =False,header=None).dropna(thresh=1)
         self.data_site_reference = ''
         self.data_site_measures = ''
 
     # Extract input data from non domestic tab
     def extract_data_from_input_sheet(self):
-        small_df = pd.concat([self.sheet.loc[11:13,3],self.sheet.loc[11:13,2]],axis=1)
+        #print (self.tab)
+        try:
+            proposed_engergy_upgrade_index = self.sheet.iloc[:,0][self.sheet.iloc[:,0]=='Proposed Energy Upgrades'].index.tolist()[0]
+        except IndexError:
+            proposed_engergy_upgrade_index=14
+        project_category_index = self.sheet.iloc[:,0][self.sheet.iloc[:,0]=='Project Category'].index.tolist()[0]
+        small_df = pd.concat([self.sheet.loc[proposed_engergy_upgrade_index-3:proposed_engergy_upgrade_index-1,3],self.sheet.loc[proposed_engergy_upgrade_index-3:proposed_engergy_upgrade_index-1,2]],axis=1,sort=False)
         small_df = small_df.transpose().reset_index(drop=True).transpose()
-        TEMP_df = self.sheet.iloc[2:14,0:2].reset_index(drop=True)
+        TEMP_df = self.sheet.iloc[project_category_index:proposed_engergy_upgrade_index,0:2].reset_index(drop=True)
         list_empty = TEMP_df[TEMP_df[0] == ''].index.tolist()
         if (len(list_empty)>0):
             TEMP_df=(TEMP_df.drop(list_empty, axis=0).reset_index(drop=True))
-        self.data_site_reference = TEMP_df.append(small_df,ignore_index=True)
-        TEMP_data_site_measures_proposed_energy_upgrades =self.sheet.iloc[15:25,0:7].reset_index(drop=True).drop([1,3,5],axis=1)
-        TEMP_data_site_measures_unit = self.sheet.iloc[14:25, 7:24].drop(15,axis=0).reset_index(drop=True).drop([20,21],axis=1)
-        TEMP_data_site_measures = pd.concat([TEMP_data_site_measures_proposed_energy_upgrades,TEMP_data_site_measures_unit],axis=1)
-        self.data_site_measures = TEMP_data_site_measures.loc[~TEMP_data_site_measures[0].isin(['Total','','-'])]
-        return self.data_site_measures,self.data_site_reference
+        self.data_site_reference = TEMP_df.append(small_df,ignore_index=True,sort=False)
+        extracted_column_index_for_site_measures_energy_upgrades = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:]=='Electrical Savings kWh'].index.tolist()[0]
+        columns_to_drop_energy = self.sheet.iloc[proposed_engergy_upgrade_index+1,0:][self.sheet.iloc[proposed_engergy_upgrade_index+1,0:].isin(['Description of Minimum Data Required for Existing Specification','Description of Minimum Data Required for Proposed Specification','Additional Information'])].index.tolist()
+        TEMP_data_site_measures_proposed_energy_upgrades =self.sheet.iloc[proposed_engergy_upgrade_index+1:25,0:extracted_column_index_for_site_measures_energy_upgrades].reset_index(drop=True).drop(columns_to_drop_energy,axis=1)
+        columns_to_drop_unit = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:].isin(['Milestone','Invoice'])].index.tolist()
+        last_column_unit = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:]=='Energy Credits'].index.tolist()[-1]
+        TEMP_data_site_measures_unit = self.sheet.iloc[proposed_engergy_upgrade_index:25, extracted_column_index_for_site_measures_energy_upgrades:last_column_unit].drop(proposed_engergy_upgrade_index+1,axis=0).reset_index(drop=True).drop(columns_to_drop_unit,axis=1)
+        TEMP_data_site_measures = pd.concat([TEMP_data_site_measures_proposed_energy_upgrades,TEMP_data_site_measures_unit],axis=1,sort=False)
+        self.data_site_measures = TEMP_data_site_measures.loc[~TEMP_data_site_measures[0].astype(str).isin(['Total','','-',' '])]
+        return [self.data_site_measures,self.data_site_reference]
 
     def print_input_sheet_content(self):
         print ('File name: ',self.fileName)
@@ -68,7 +79,7 @@ class BEC_project(object):
             if ('Project Summary' == sheetName):
                 self.BEC_worksheet[sheetName] = pd.read_excel(self.bec_file, sheetName, keep_default_na=False,header=None)
             if ('Non Domestic' in sheetName):
-                self.BEC_worksheet[sheetName] = BEC_Non_Domestic(self.bec_file,sheetName,self.project_name,self.file_name)
+                self.BEC_worksheet[sheetName] = BEC_Non_Domestic(self.bec_file,sheetName,self.project_name,self.file_name,sheetName)
             if ('Beneficiary' == sheetName):
                 self.BEC_worksheet[sheetName] = pd.read_excel(self.bec_file, sheetName, keep_default_na=False,header=None)
 
@@ -109,7 +120,7 @@ class BEC_project(object):
             TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]:list_Add_addition_row[0],header_line_index].drop([list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+1,list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+2],axis=0).reset_index(drop=True)
             TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
             # Merge 2 tables into 1
-            data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1)
+            data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1,sort=False)
             data_project_summary.insert(0,'-1',self.project_name)
             data_project_summary.iloc[0,0]='Project Code'
             data_project_summary.iloc[0,1]='Tab'
@@ -150,7 +161,7 @@ class BEC_project(object):
             non_domestic_reference.insert(0, '1', non_domestic_sheet)
             list_reference.append(non_domestic_reference)
     #Non Domestic Measures
-        TEMP_site_measures_df = pd.concat(list_measures,ignore_index=True)
+        TEMP_site_measures_df = pd.concat(list_measures,ignore_index=True,sort=False)
         TEMP_site_measures_df.insert(0, '0', self.project_name)
         TEMP_site_measures_df.insert(0, '-1', self.project_year)
         TEMP_site_measures_df.iloc[0,0]='Year'
@@ -160,7 +171,7 @@ class BEC_project(object):
         #TEMP_site_measures_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_measures_df.iloc[0, 16:20]))
         self.site_measures = TEMP_site_measures_df
     #Non Domestic Reference
-        TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True)
+        TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True,sort=False)
         TEMP_site_reference_df.insert(0, '0', self.project_name)
         TEMP_site_reference_df.insert(0, '-1', self.project_year)
         TEMP_site_reference_df.iloc[0,0]='Year'
@@ -368,7 +379,7 @@ def execute_each_project_in_a_year(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('.xlsm' in file_name):
+            if ('.xlsm' in file_name) and '749' in file_name :
                 #try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
@@ -376,7 +387,7 @@ def execute_each_project_in_a_year(folder_name):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
                 #except Exception:
-                #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
+                #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
     else:
         print ('Folder '+folder_name+' is empty')
     if (len(errors)>0):
@@ -386,7 +397,7 @@ def execute_each_project_in_a_year(folder_name):
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list[::-1]:
-        if re.search(r'^BEC \d+$',folder_name):
+        if re.search(r'^BEC \d+$',folder_name) and folder_name=='BEC 2018':
             print ('Checking folder',folder_name)
             execute_each_project_in_a_year(folder_name)
 
@@ -399,7 +410,7 @@ def extract_randomly_data():
                                    keep_default_na=False, header=None, index=False)
     numb_of_rand_data = int(input('Number of data points: '))
     random_selected_data = extracted_data.iloc[1:, :].sample(numb_of_rand_data)
-    result = extracted_headers.append(random_selected_data)
+    result = extracted_headers.append(random_selected_data,sort=False)
     result.to_excel(selected_folder+' '+selected_file + ' ' + str(numb_of_rand_data) + ' searching results.xlsx', header=False, index=False)
     print('Done!')
 
