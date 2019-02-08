@@ -14,28 +14,39 @@ from fuzzywuzzy import fuzz
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 class BEC_Non_Domestic(object):
-    def __init__(self,bec_file,sheetName,project_name,file_name):
+    def __init__(self,bec_file,sheetName,project_name,file_name,tab):
         self.fileName = file_name
         self.project_name=project_name
         self.sheetName= sheetName
+        self.tab=tab
         self.sheet = pd.read_excel(bec_file,sheetName,keep_default_na =False,header=None).dropna(thresh=1)
         self.data_site_reference = ''
         self.data_site_measures = ''
 
     # Extract input data from non domestic tab
     def extract_data_from_input_sheet(self):
-        small_df = pd.concat([self.sheet.loc[11:13,3],self.sheet.loc[11:13,2]],axis=1)
+        #print (self.tab)
+        try:
+            proposed_engergy_upgrade_index = self.sheet.iloc[:,0][self.sheet.iloc[:,0]=='Proposed Energy Upgrades'].index.tolist()[0]
+        except IndexError:
+            proposed_engergy_upgrade_index=14
+        project_category_index = self.sheet.iloc[:,0][self.sheet.iloc[:,0]=='Project Category'].index.tolist()[0]
+        small_df = pd.concat([self.sheet.loc[proposed_engergy_upgrade_index-3:proposed_engergy_upgrade_index-1,3],self.sheet.loc[proposed_engergy_upgrade_index-3:proposed_engergy_upgrade_index-1,2]],axis=1,sort=False)
         small_df = small_df.transpose().reset_index(drop=True).transpose()
-        TEMP_df = self.sheet.iloc[2:14,0:2].reset_index(drop=True)
+        TEMP_df = self.sheet.iloc[project_category_index:proposed_engergy_upgrade_index,0:2].reset_index(drop=True)
         list_empty = TEMP_df[TEMP_df[0] == ''].index.tolist()
         if (len(list_empty)>0):
             TEMP_df=(TEMP_df.drop(list_empty, axis=0).reset_index(drop=True))
-        self.data_site_reference = TEMP_df.append(small_df,ignore_index=True)
-        TEMP_data_site_measures_proposed_energy_upgrades =self.sheet.iloc[15:25,0:7].reset_index(drop=True).drop([1,3,5],axis=1)
-        TEMP_data_site_measures_unit = self.sheet.iloc[14:25, 7:24].drop(15,axis=0).reset_index(drop=True).drop([20,21],axis=1)
-        TEMP_data_site_measures = pd.concat([TEMP_data_site_measures_proposed_energy_upgrades,TEMP_data_site_measures_unit],axis=1)
-        self.data_site_measures = TEMP_data_site_measures.loc[~TEMP_data_site_measures[0].isin(['Total','','-'])]
-        return self.data_site_measures,self.data_site_reference
+        self.data_site_reference = TEMP_df.append(small_df,ignore_index=True,sort=False)
+        extracted_column_index_for_site_measures_energy_upgrades = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:]=='Electrical Savings kWh'].index.tolist()[0]
+        columns_to_drop_energy = self.sheet.iloc[proposed_engergy_upgrade_index+1,0:][self.sheet.iloc[proposed_engergy_upgrade_index+1,0:].isin(['Description of Minimum Data Required for Existing Specification','Description of Minimum Data Required for Proposed Specification','Additional Information'])].index.tolist()
+        TEMP_data_site_measures_proposed_energy_upgrades =self.sheet.iloc[proposed_engergy_upgrade_index+1:25,0:extracted_column_index_for_site_measures_energy_upgrades].reset_index(drop=True).drop(columns_to_drop_energy,axis=1)
+        columns_to_drop_unit = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:].isin(['Milestone','Invoice'])].index.tolist()
+        last_column_unit = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:]=='Energy Credits'].index.tolist()[-1]
+        TEMP_data_site_measures_unit = self.sheet.iloc[proposed_engergy_upgrade_index:25, extracted_column_index_for_site_measures_energy_upgrades:last_column_unit].drop(proposed_engergy_upgrade_index+1,axis=0).reset_index(drop=True).drop(columns_to_drop_unit,axis=1)
+        TEMP_data_site_measures = pd.concat([TEMP_data_site_measures_proposed_energy_upgrades,TEMP_data_site_measures_unit],axis=1,sort=False)
+        self.data_site_measures = TEMP_data_site_measures.loc[~TEMP_data_site_measures[0].astype(str).isin(['Total','','-',' '])]
+        return [self.data_site_measures,self.data_site_reference]
 
     def print_input_sheet_content(self):
         print ('File name: ',self.fileName)
@@ -55,7 +66,7 @@ class BEC_project(object):
         self.file_name = file
         self.input_folder= path+folder+'/'
         self.out_put_folder = ''
-        self.project_name = re.search(r'BEC(\s?)\d+',file).group()
+        self.project_name = re.search(r'BEC(\s|\_?)\d+(\s?)\d+',file).group()
         self.project_year = re.search(r'\d+',self.input_folder).group()
         self.bec_file = pd.ExcelFile(self.input_folder+file)
         self.BEC_worksheet={}
@@ -68,28 +79,48 @@ class BEC_project(object):
             if ('Project Summary' == sheetName):
                 self.BEC_worksheet[sheetName] = pd.read_excel(self.bec_file, sheetName, keep_default_na=False,header=None)
             if ('Non Domestic' in sheetName):
-                self.BEC_worksheet[sheetName] = BEC_Non_Domestic(self.bec_file,sheetName,self.project_name,self.file_name)
+                self.BEC_worksheet[sheetName] = BEC_Non_Domestic(self.bec_file,sheetName,self.project_name,self.file_name,sheetName)
             if ('Beneficiary' == sheetName):
                 self.BEC_worksheet[sheetName] = pd.read_excel(self.bec_file, sheetName, keep_default_na=False,header=None)
 
     #Extract project summary data
     def extract_summary_data(self):
-        TEMP_dataframe = self.BEC_worksheet['Project Summary'].iloc[:,1]
-        list_Values_Automatically_brought = TEMP_dataframe[TEMP_dataframe=='Values automatically brought in from "Non Domestic " sheets'].index.tolist()
+        TEMP_dataframe = self.BEC_worksheet['Project Summary'].iloc[:,1].astype(str)
+        TEMP_dataframe2 = self.BEC_worksheet['Project Summary'].iloc[:,0].astype(str)
+        # If you want to remove unnecessary data
+        # TEMP_dataframe2.replace('', np.nan, inplace=True)
+        # TEMP_dataframe2.replace(r'^\d+$', np.nan, inplace=True,regex=True)
+        # TEMP_dataframe2.dropna(inplace=True)
+        list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs =TEMP_dataframe2[TEMP_dataframe2.str.contains('Better Energy Communities Programme - Non Domestic Costs',na=False)].index.tolist()
         list_Add_addition_row = TEMP_dataframe[TEMP_dataframe=='Add additional rows as required'].index.tolist()
+        if len(list_Add_addition_row)==0:
+            list_Add_addition_row = TEMP_dataframe2[TEMP_dataframe2.str.contains('Better Energy Communities Programme - Domestic Costs',na=False)].index.tolist()
         if (len(list_Add_addition_row)==1):
-            TEMP_data_project_summary1 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Automatically_brought[-1]+1:list_Add_addition_row[0], 0:6].reset_index(drop=True).drop(3,axis=1)
+            if int(self.project_year) >=2017:
+                column_to_collect = 6
+            else:
+                column_to_collect = 4
+            # Get data of the first half of requested table
+            TEMP_data_project_summary1 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+2:list_Add_addition_row[0], 0:column_to_collect].reset_index(drop=True).drop(3,axis=1)
             list_0 = TEMP_data_project_summary1[TEMP_data_project_summary1.iloc[:,1] == 0].index.tolist()
             list_empty = TEMP_data_project_summary1[TEMP_data_project_summary1[2]==''].index.tolist()
             self.empty_line=list_0+list_empty
             TEMP_data_project_summary1 = TEMP_data_project_summary1.drop(self.empty_line,axis=0).reset_index(drop=True)
-            if (len(TEMP_data_project_summary1.iloc[:,3].unique())==1 and TEMP_data_project_summary1.iloc[:,3].unique()[0]==u' '):
-                TEMP_data_project_summary1.drop(4,axis=1,inplace=True)
-            TEMP_data_project_summary1.iloc[1:,3:]=TEMP_data_project_summary1.iloc[1:,3:].fillna(0)
-            TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:, 3:] * 100).astype(int))
-            TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Automatically_brought[-1]-1:list_Add_addition_row[0],18:21].drop([list_Values_Automatically_brought[-1],list_Values_Automatically_brought[-1]+1],axis=0).reset_index(drop=True)
+            if int(self.project_year) >=2017:
+                # Convert % num to numemric
+                if (len(TEMP_data_project_summary1.iloc[:,3].unique())==1 and TEMP_data_project_summary1.iloc[:,3].unique()[0]==u' '):
+                    TEMP_data_project_summary1.drop(4,axis=1,inplace=True)
+                TEMP_data_project_summary1.iloc[1:,3:]=TEMP_data_project_summary1.iloc[1:,3:].fillna(0)
+                TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:, 3:] * 100).astype(int))
+            # Get data of the second half of requested table
+            header_line_boolean = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]].astype(str).isin(['Total Project Cost','SEAI funding','Eligible VAT','SEAI Funding'])
+            header_line_index = header_line_boolean[header_line_boolean==True].index.tolist()
+            if int(self.project_year)==2016:
+                header_line_index = header_line_index[:-1]
+            TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]:list_Add_addition_row[0],header_line_index].drop([list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+1,list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+2],axis=0).reset_index(drop=True)
             TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line,axis=0).reset_index(drop=True)
-            data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1)
+            # Merge 2 tables into 1
+            data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1,sort=False)
             data_project_summary.insert(0,'-1',self.project_name)
             data_project_summary.iloc[0,0]='Project Code'
             data_project_summary.iloc[0,1]='Tab'
@@ -130,7 +161,7 @@ class BEC_project(object):
             non_domestic_reference.insert(0, '1', non_domestic_sheet)
             list_reference.append(non_domestic_reference)
     #Non Domestic Measures
-        TEMP_site_measures_df = pd.concat(list_measures,ignore_index=True)
+        TEMP_site_measures_df = pd.concat(list_measures,ignore_index=True,sort=False)
         TEMP_site_measures_df.insert(0, '0', self.project_name)
         TEMP_site_measures_df.insert(0, '-1', self.project_year)
         TEMP_site_measures_df.iloc[0,0]='Year'
@@ -140,7 +171,7 @@ class BEC_project(object):
         #TEMP_site_measures_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_measures_df.iloc[0, 16:20]))
         self.site_measures = TEMP_site_measures_df
     #Non Domestic Reference
-        TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True)
+        TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True,sort=False)
         TEMP_site_reference_df.insert(0, '0', self.project_name)
         TEMP_site_reference_df.insert(0, '-1', self.project_year)
         TEMP_site_reference_df.iloc[0,0]='Year'
@@ -205,14 +236,14 @@ class BEC_project(object):
                     if extracted_df_index_missing is not None and len(extracted_df_index_missing)>0:
                         extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,keep_default_na=False, header=None, index=False)
                         for new_column in extracted_df_index_missing:
-                            new_column[1] += extracted_df_index_missing.index(new_column)
+                            #new_column[1] += extracted_df_index_missing.index(new_column)
                             extracted_df = fill_empty_value_into_blank_columns(new_column, extracted_df)
                         extracted_df.to_excel(self.out_put_folder + file_name + '.xlsx', file_name, header=False,index=False)
                 if check_different(extracted_df.iloc[0,:].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist()):
                     current_df_index_missing = find_difference(extracted_df.iloc[0, :].astype(str).tolist(),current_df.iloc[0, :].astype(str).tolist(), 'missing')
                     if current_df_index_missing is not None and len(current_df_index_missing) > 0:
                         for new_column in current_df_index_missing:
-                            new_column[1] += current_df_index_missing.index(new_column)
+                            #new_column[1] += current_df_index_missing.index(new_column)
                             current_df = fill_empty_value_into_blank_columns(new_column, current_df)
                 # Checking for different headers in both dataframe
                 if check_different(current_df.iloc[0, :].astype(str).tolist(),extracted_df.iloc[0, :].astype(str).tolist()):
@@ -250,9 +281,12 @@ class BEC_project(object):
 
     # Add data into an excel file
     def add_project(self):
-        if not os.path.exists(path+'BEC '+self.project_year+' Shared Data/'):
-            os.makedirs(path+'BEC '+self.project_year+' Shared Data/')
-        self.out_put_folder= path+'BEC '+self.project_year+' Shared Data/'
+        # if not os.path.exists(path + 'BEC ' + self.project_year + ' Shared Data/'):
+        #     os.makedirs(path + 'BEC ' + self.project_year + ' Shared Data/')
+        # self.out_put_folder = path + 'BEC ' + self.project_year + ' Shared Data/'
+        if not os.path.exists(path+'BEC Shared Data/'):
+            os.makedirs(path+'BEC Shared Data/')
+        self.out_put_folder= path+'BEC Shared Data/'
         self.write_files(self.project_summary_dataframe,'Project Summary')
         if (self.beneficiary_dataframe is not None):
             self.write_files(self.beneficiary_dataframe,'Beneficiary')
@@ -287,7 +321,7 @@ def check_different(list1,list2):
 
 def check_header(text,list_text):
     for i in list_text:
-        if fuzz.ratio(i,text)>=95:
+        if fuzz.ratio(i,text)>=92:
             return ['different',list_text.index(i)]
     return ['missing']
 
@@ -353,7 +387,7 @@ def execute_each_project_in_a_year(folder_name):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
                 except Exception:
-                    errors.append(temp_file.project_name + ' from ' + temp_file.file_name )
+                   errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
     else:
         print ('Folder '+folder_name+' is empty')
     if (len(errors)>0):
@@ -362,8 +396,7 @@ def execute_each_project_in_a_year(folder_name):
 
 def working_with_folder():
     folder_list = os.listdir(path)
-    folder_list.reverse()
-    for folder_name in folder_list:
+    for folder_name in folder_list[::-1]:
         if re.search(r'^BEC \d+$',folder_name):
             print ('Checking folder',folder_name)
             execute_each_project_in_a_year(folder_name)
@@ -377,12 +410,13 @@ def extract_randomly_data():
                                    keep_default_na=False, header=None, index=False)
     numb_of_rand_data = int(input('Number of data points: '))
     random_selected_data = extracted_data.iloc[1:, :].sample(numb_of_rand_data)
-    result = extracted_headers.append(random_selected_data)
+    result = extracted_headers.append(random_selected_data,sort=False)
     result.to_excel(selected_folder+' '+selected_file + ' ' + str(numb_of_rand_data) + ' searching results.xlsx', header=False, index=False)
     print('Done!')
 
 def main():
-    option = input('Choose your task (1 for executing files or 2 for randomly selecting data points): ')
+    #option = input('Choose your task (1 for executing files or 2 for randomly selecting data points): ')
+    option='1'
     if (option == '1'):
         start_time = time.time()
         working_with_folder()
