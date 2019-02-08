@@ -271,6 +271,8 @@ class BEC_project(object):
                 writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
                 current_df.iloc[1:, :].to_excel(writer, file_name, index=False, header=False,startrow=writer.sheets[file_name].max_row)
                 writer.save()
+            else:
+                print (self.project_name,'hasnt printed',file_name)
 
             # Append to the whole df which is not recommended
             # extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,
@@ -287,10 +289,10 @@ class BEC_project(object):
         if not os.path.exists(path+'BEC Shared Data/'):
             os.makedirs(path+'BEC Shared Data/')
         self.out_put_folder= path+'BEC Shared Data/'
-        self.write_files(self.project_summary_dataframe,'Project Summary')
+        #self.write_files(self.project_summary_dataframe,'Project Summary')
         # if (self.beneficiary_dataframe is not None):
         #     self.write_files(self.beneficiary_dataframe,'Beneficiary')
-        # self.write_files(self.site_measures,'Site Measures')
+        self.write_files(self.site_measures,'Site Measures')
         # self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
@@ -379,7 +381,7 @@ def execute_each_project_in_a_year(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('.xlsm' in file_name or '.xlsx' in file_name or '.xls' in file_name) and '821' in file_name:
+            if ('.xlsm' in file_name or '.xlsx' in file_name or '.xls' in file_name):
                 try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
@@ -397,7 +399,7 @@ def execute_each_project_in_a_year(folder_name):
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list[::-1]:
-        if re.search(r'^BEC \d+$',folder_name) and (folder_name in ['BEC 2018','BEC 2015']):
+        if re.search(r'^BEC \d+$',folder_name):
             print ('Checking folder',folder_name)
             execute_each_project_in_a_year(folder_name)
 
