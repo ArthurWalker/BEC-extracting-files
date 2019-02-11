@@ -10,6 +10,7 @@ from tqdm import tqdm
 import openpyxl
 from openpyxl import load_workbook
 from fuzzywuzzy import fuzz
+import msoffcrypto
 
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
@@ -41,10 +42,11 @@ class BEC_Non_Domestic(object):
         extracted_column_index_for_site_measures_energy_upgrades = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:]=='Electrical Savings kWh'].index.tolist()[0]
         columns_to_drop_energy = self.sheet.iloc[proposed_engergy_upgrade_index+1,0:][self.sheet.iloc[proposed_engergy_upgrade_index+1,0:].isin(['Description of Minimum Data Required for Existing Specification','Description of Minimum Data Required for Proposed Specification','Additional Information'])].index.tolist()
         TEMP_data_site_measures_proposed_energy_upgrades =self.sheet.iloc[proposed_engergy_upgrade_index+1:25,0:extracted_column_index_for_site_measures_energy_upgrades].reset_index(drop=True).drop(columns_to_drop_energy,axis=1)
-        columns_to_drop_unit = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:].isin(['Milestone','Invoice'])].index.tolist()
         last_column_unit = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:]=='Energy Credits'].index.tolist()[-1]
+        columns_to_drop_unit = self.sheet.iloc[proposed_engergy_upgrade_index, extracted_column_index_for_site_measures_energy_upgrades:last_column_unit+1][self.sheet.iloc[proposed_engergy_upgrade_index, extracted_column_index_for_site_measures_energy_upgrades:last_column_unit+1].isin(['Milestone', 'Invoice', '','Milestone Claim','Amount'])].index.tolist()
         TEMP_data_site_measures_unit = self.sheet.iloc[proposed_engergy_upgrade_index:25, extracted_column_index_for_site_measures_energy_upgrades:last_column_unit+1].drop(proposed_engergy_upgrade_index+1,axis=0).reset_index(drop=True).drop(columns_to_drop_unit,axis=1)
         TEMP_data_site_measures = pd.concat([TEMP_data_site_measures_proposed_energy_upgrades,TEMP_data_site_measures_unit],axis=1,sort=False)
+        TEMP_data_site_measures.columns = [i for i in range(TEMP_data_site_measures.shape[1])]
         self.data_site_measures = TEMP_data_site_measures.loc[~TEMP_data_site_measures[0].astype(str).isin(['Total','','-',' '])]
         return [self.data_site_measures,self.data_site_reference]
 
@@ -290,10 +292,10 @@ class BEC_project(object):
             os.makedirs(path+'BEC Shared Data/')
         self.out_put_folder= path+'BEC Shared Data/'
         #self.write_files(self.project_summary_dataframe,'Project Summary')
-        # if (self.beneficiary_dataframe is not None):
-        #     self.write_files(self.beneficiary_dataframe,'Beneficiary')
+        #if (self.beneficiary_dataframe is not None):
+        #    self.write_files(self.beneficiary_dataframe,'Beneficiary')
         self.write_files(self.site_measures,'Site Measures')
-        # self.write_files(self.site_references,'Site References')
+        #self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
         print (self.bec_file.sheet_names)
@@ -382,24 +384,24 @@ def execute_each_project_in_a_year(folder_name):
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
             if ('.xlsm' in file_name or '.xlsx' in file_name or '.xls' in file_name):
-                try:
+                #try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
                     if (temp_file.check_available_result()):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
-                except Exception:
-                   errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
+                #except Exception:
+                #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
     else:
         print ('Folder '+folder_name+' is empty')
     if (len(errors)>0):
        print ('')
-       print ('Errors: ',errors)
+       print ('Errors: ',len(errors),errors)
 
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list[::-1]:
-        if re.search(r'^BEC \d+$',folder_name):
+        if re.search(r'^BEC \d+$',folder_name) and (folder_name=='BEC 2018' or folder_name=='BEC 2015'):
             print ('Checking folder',folder_name)
             execute_each_project_in_a_year(folder_name)
 
