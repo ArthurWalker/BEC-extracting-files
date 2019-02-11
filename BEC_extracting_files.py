@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import tempfile
 import pandas as pd
 import numpy as np
 import re
@@ -11,6 +12,7 @@ import openpyxl
 from openpyxl import load_workbook
 from fuzzywuzzy import fuzz
 import msoffcrypto
+import xlrd
 
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
@@ -291,11 +293,11 @@ class BEC_project(object):
         if not os.path.exists(path+'BEC Shared Data/'):
             os.makedirs(path+'BEC Shared Data/')
         self.out_put_folder= path+'BEC Shared Data/'
-        #self.write_files(self.project_summary_dataframe,'Project Summary')
-        #if (self.beneficiary_dataframe is not None):
-        #    self.write_files(self.beneficiary_dataframe,'Beneficiary')
+        self.write_files(self.project_summary_dataframe,'Project Summary')
+        if (self.beneficiary_dataframe is not None):
+           self.write_files(self.beneficiary_dataframe,'Beneficiary')
         self.write_files(self.site_measures,'Site Measures')
-        #self.write_files(self.site_references,'Site References')
+        self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
         print (self.bec_file.sheet_names)
@@ -366,12 +368,13 @@ def deal_with_strange_characters(series):
     series=series.apply(lambda x:x.encode('utf-8').decode('utf-8'))
     return series
 
-def unprotect_xlsm_file(path,filename):
+def unprotect_xlsm_file(path,filename,passw):
     xcl = win32com.client.Dispatch('Excel.Application')
-    pw_str = 'Bec2018dec2017'
+    #Pass for files in 2018 'Bec2018dec2017'
+    pw_str = passw
     wb = xcl.Workbooks.Open(path+filename,False,True,None,pw_str)
     xcl.DisplayAlerts=False
-    wb.SaveAs(filename,None,'','')
+    wb.SaveAs(path+filename+'x',None,'','')
     xcl.Quit()
 
 def access_to_working_file(folder_name):
@@ -401,7 +404,7 @@ def execute_each_project_in_a_year(folder_name):
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list[::-1]:
-        if re.search(r'^BEC \d+$',folder_name) and (folder_name=='BEC 2018' or folder_name=='BEC 2015'):
+        if re.search(r'^BEC \d+$',folder_name) :
             print ('Checking folder',folder_name)
             execute_each_project_in_a_year(folder_name)
 
