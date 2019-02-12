@@ -137,7 +137,8 @@ class BEC_project(object):
 
     # Extract beneficiary data
     def extract_beneficiary_data(self):
-        TEMP_data_beneficiary = self.BEC_worksheet['Beneficiary'].iloc[8:,1]
+        starting_scanning_line = self.BEC_worksheet['Beneficiary'].iloc[0:,1][self.BEC_worksheet['Beneficiary'].iloc[:,1]=='Beneficiary Name'].index.tolist()[0]
+        TEMP_data_beneficiary = self.BEC_worksheet['Beneficiary'].iloc[starting_scanning_line:,1]
         data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(['Total Project Cost','','Enter Name of Beneficiary','Enter Name of Beneficiary ','Name Of Beneficiary',0])].to_frame().reset_index(drop=True)
         data_beneficiary.insert(0,0,self.project_name)
         data_beneficiary.iloc[0,0]='Project Code'
@@ -296,11 +297,11 @@ class BEC_project(object):
         if not os.path.exists(path+'BEC Shared Data/'):
             os.makedirs(path+'BEC Shared Data/')
         self.out_put_folder= path+'BEC Shared Data/'
-        self.write_files(self.project_summary_dataframe,'Project Summary')
+        #self.write_files(self.project_summary_dataframe,'Project Summary')
         if (self.beneficiary_dataframe is not None):
            self.write_files(self.beneficiary_dataframe,'Beneficiary')
-        self.write_files(self.site_measures,'Site Measures')
-        self.write_files(self.site_references,'Site References')
+        #self.write_files(self.site_measures,'Site Measures')
+        #self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
         print (self.bec_file.sheet_names)
