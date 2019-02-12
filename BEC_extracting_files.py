@@ -116,7 +116,7 @@ class BEC_project(object):
                 if (len(TEMP_data_project_summary1.iloc[:,3].unique())==1 and TEMP_data_project_summary1.iloc[:,3].unique()[0]==u' '):
                     TEMP_data_project_summary1.drop(4,axis=1,inplace=True)
                 TEMP_data_project_summary1.iloc[1:,3:]=TEMP_data_project_summary1.iloc[1:,3:].fillna(0)
-                TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:, 3:] * 100).astype(int))
+                TEMP_data_project_summary1.update((TEMP_data_project_summary1.iloc[1:, 3:] * 100).astype(float))
             # Get data of the second half of requested table
             header_line_boolean = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]].astype(str).isin(['Total Project Cost','SEAI funding','Eligible VAT','SEAI Funding'])
             header_line_index = header_line_boolean[header_line_boolean==True].index.tolist()
@@ -297,11 +297,11 @@ class BEC_project(object):
         if not os.path.exists(path+'BEC Shared Data/'):
             os.makedirs(path+'BEC Shared Data/')
         self.out_put_folder= path+'BEC Shared Data/'
-        #self.write_files(self.project_summary_dataframe,'Project Summary')
+        self.write_files(self.project_summary_dataframe,'Project Summary')
         if (self.beneficiary_dataframe is not None):
-           self.write_files(self.beneficiary_dataframe,'Beneficiary')
-        #self.write_files(self.site_measures,'Site Measures')
-        #self.write_files(self.site_references,'Site References')
+          self.write_files(self.beneficiary_dataframe,'Beneficiary')
+        self.write_files(self.site_measures,'Site Measures')
+        self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
         print (self.bec_file.sheet_names)
@@ -391,14 +391,14 @@ def execute_each_project_in_a_year(folder_name):
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
             if ('.xlsm' in file_name or '.xlsx' in file_name or '.xls' in file_name):
-                #try:
+                try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
                     if (temp_file.check_available_result()):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
-                #except Exception:
-                #   errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
+                except Exception:
+                   errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
     else:
         print ('Folder '+folder_name+' is empty')
     if (len(errors)>0):
