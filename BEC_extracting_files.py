@@ -106,7 +106,8 @@ class BEC_project(object):
                 column_to_collect = 4
             # Get data of the first half of requested table
             TEMP_data_project_summary1 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+2:list_Add_addition_row[0], 0:column_to_collect].reset_index(drop=True).drop(3,axis=1)
-            list_0 = TEMP_data_project_summary1[(TEMP_data_project_summary1.loc[:,1] == 0) |(TEMP_data_project_summary1.iloc[1:,1]=='Facility Name')| (TEMP_data_project_summary1.iloc[1:,1]==' ')].index.tolist()
+            #list_0 = TEMP_data_project_summary1[(TEMP_data_project_summary1.loc[:,1] == 0) |(TEMP_data_project_summary1.iloc[1:,1]=='Facility Name')| (TEMP_data_project_summary1.iloc[1:,1]==' ')].index.tolist()
+            list_0 = TEMP_data_project_summary1[(TEMP_data_project_summary1.loc[:, 1] == 0)].index.tolist()
             list_empty = TEMP_data_project_summary1[(TEMP_data_project_summary1[2]=='')].index.tolist()
             self.empty_line=list_0+list_empty
             TEMP_data_project_summary1 = TEMP_data_project_summary1.drop(self.empty_line,axis=0).reset_index(drop=True)
@@ -296,10 +297,10 @@ class BEC_project(object):
             os.makedirs(path+'BEC Shared Data/')
         self.out_put_folder= path+'BEC Shared Data/'
         self.write_files(self.project_summary_dataframe,'Project Summary')
-        # if (self.beneficiary_dataframe is not None):
-        #    self.write_files(self.beneficiary_dataframe,'Beneficiary')
-        # self.write_files(self.site_measures,'Site Measures')
-        # self.write_files(self.site_references,'Site References')
+        if (self.beneficiary_dataframe is not None):
+           self.write_files(self.beneficiary_dataframe,'Beneficiary')
+        self.write_files(self.site_measures,'Site Measures')
+        self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
         print (self.bec_file.sheet_names)
