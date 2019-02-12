@@ -106,8 +106,8 @@ class BEC_project(object):
                 column_to_collect = 4
             # Get data of the first half of requested table
             TEMP_data_project_summary1 = self.BEC_worksheet['Project Summary'].iloc[list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs[-1]+2:list_Add_addition_row[0], 0:column_to_collect].reset_index(drop=True).drop(3,axis=1)
-            list_0 = TEMP_data_project_summary1[TEMP_data_project_summary1.iloc[:,1] == 0].index.tolist()
-            list_empty = TEMP_data_project_summary1[TEMP_data_project_summary1[2]==''].index.tolist()
+            list_0 = TEMP_data_project_summary1[(TEMP_data_project_summary1.loc[:,1] == 0) |(TEMP_data_project_summary1.iloc[1:,1]=='Facility Name')| (TEMP_data_project_summary1.iloc[1:,1]==' ')].index.tolist()
+            list_empty = TEMP_data_project_summary1[(TEMP_data_project_summary1[2]=='')].index.tolist()
             self.empty_line=list_0+list_empty
             TEMP_data_project_summary1 = TEMP_data_project_summary1.drop(self.empty_line,axis=0).reset_index(drop=True)
             if int(self.project_year) >=2017:
@@ -165,31 +165,33 @@ class BEC_project(object):
             non_domestic_reference.insert(0, '1', non_domestic_sheet)
             list_reference.append(non_domestic_reference)
     #Non Domestic Measures
-        TEMP_site_measures_df = pd.concat(list_measures,ignore_index=True,sort=False)
-        TEMP_site_measures_df.insert(0, '0', self.project_name)
-        TEMP_site_measures_df.insert(0, '-1', self.project_year)
-        TEMP_site_measures_df.iloc[0,0]='Year'
-        TEMP_site_measures_df.iloc[0,1]='Project Code'
-        TEMP_site_measures_df.iloc[0,2]='Tab'
-        TEMP_site_measures_df.iloc[0,3]='ID Measures'
-        #TEMP_site_measures_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_measures_df.iloc[0, 16:20]))
-        self.site_measures = TEMP_site_measures_df
+        if (len(list_measures) > 0):
+            TEMP_site_measures_df = pd.concat(list_measures,ignore_index=True,sort=False)
+            TEMP_site_measures_df.insert(0, '0', self.project_name)
+            TEMP_site_measures_df.insert(0, '-1', self.project_year)
+            TEMP_site_measures_df.iloc[0,0]='Year'
+            TEMP_site_measures_df.iloc[0,1]='Project Code'
+            TEMP_site_measures_df.iloc[0,2]='Tab'
+            TEMP_site_measures_df.iloc[0,3]='ID Measures'
+            #TEMP_site_measures_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_measures_df.iloc[0, 16:20]))
+            self.site_measures = TEMP_site_measures_df
     #Non Domestic Reference
-        TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True,sort=False)
-        TEMP_site_reference_df.insert(0, '0', self.project_name)
-        TEMP_site_reference_df.insert(0, '-1', self.project_year)
-        TEMP_site_reference_df.iloc[0,0]='Year'
-        TEMP_site_reference_df.iloc[0,1]='Project Code'
-        TEMP_site_reference_df.iloc[0,2]='Tab'
-        TEMP_site_reference_df.iloc[0,3]='ID References'
-        columns = TEMP_site_reference_df.iloc[0,:].reset_index(drop=True)
-        floor_area = columns[columns=='Floor Area of building'].index[0]
-        TEMP_site_reference_df.insert(int(floor_area+1), 'Unit', 'Unit')
-        TEMP_site_reference_df.insert(int(floor_area+1), 'Number', 'Num')
-        TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,int(floor_area)].astype(str).str.replace(r'\d+(\.?)\d+','',regex=True)
-        TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, int(floor_area)].astype(str).str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
-        #TEMP_site_reference_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
-        self.site_references=TEMP_site_reference_df
+        if (len(list_reference) > 0):
+            TEMP_site_reference_df = pd.concat(list_reference,ignore_index=True,sort=False)
+            TEMP_site_reference_df.insert(0, '0', self.project_name)
+            TEMP_site_reference_df.insert(0, '-1', self.project_year)
+            TEMP_site_reference_df.iloc[0,0]='Year'
+            TEMP_site_reference_df.iloc[0,1]='Project Code'
+            TEMP_site_reference_df.iloc[0,2]='Tab'
+            TEMP_site_reference_df.iloc[0,3]='ID References'
+            columns = TEMP_site_reference_df.iloc[0,:].reset_index(drop=True)
+            floor_area = columns[columns=='Floor Area of building'].index[0]
+            TEMP_site_reference_df.insert(int(floor_area+1), 'Unit', 'Unit')
+            TEMP_site_reference_df.insert(int(floor_area+1), 'Number', 'Num')
+            TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,int(floor_area)].astype(str).str.replace(r'\d+(\.?)\d+','',regex=True)
+            TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, int(floor_area)].astype(str).str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
+            #TEMP_site_reference_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
+            self.site_references=TEMP_site_reference_df
 
     # Function that controls extracting functions
     def extract_data(self):
@@ -294,10 +296,10 @@ class BEC_project(object):
             os.makedirs(path+'BEC Shared Data/')
         self.out_put_folder= path+'BEC Shared Data/'
         self.write_files(self.project_summary_dataframe,'Project Summary')
-        if (self.beneficiary_dataframe is not None):
-           self.write_files(self.beneficiary_dataframe,'Beneficiary')
-        self.write_files(self.site_measures,'Site Measures')
-        self.write_files(self.site_references,'Site References')
+        # if (self.beneficiary_dataframe is not None):
+        #    self.write_files(self.beneficiary_dataframe,'Beneficiary')
+        # self.write_files(self.site_measures,'Site Measures')
+        # self.write_files(self.site_references,'Site References')
 
     def print_list_sheet(self):
         print (self.bec_file.sheet_names)
@@ -404,7 +406,7 @@ def execute_each_project_in_a_year(folder_name):
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list[::-1]:
-        if re.search(r'^BEC \d+$',folder_name) :
+        if re.search(r'^BEC \d+$',folder_name):
             print ('Checking folder',folder_name)
             execute_each_project_in_a_year(folder_name)
 
