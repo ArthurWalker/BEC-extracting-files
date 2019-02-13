@@ -14,6 +14,7 @@ from fuzzywuzzy import fuzz
 import msoffcrypto
 import xlrd
 
+# Set initial working path for the script
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 class BEC_Non_Domestic(object):
@@ -26,6 +27,7 @@ class BEC_Non_Domestic(object):
         self.data_site_reference = ''
         self.data_site_measures = ''
         self.data_site_measure_unit=[]
+
     # Extract input data from non domestic tab
     def extract_data_from_input_sheet(self):
         #print (self.tab)
@@ -52,19 +54,6 @@ class BEC_Non_Domestic(object):
         TEMP_data_site_measures.columns = [i for i in range(TEMP_data_site_measures.shape[1])]
         self.data_site_measures = TEMP_data_site_measures.loc[~TEMP_data_site_measures[0].astype(str).isin(['Total','','-',' '])]
         return [self.data_site_measures,self.data_site_reference]
-
-    def print_input_sheet_content(self):
-        print ('File name: ',self.fileName)
-        print ('Sheet name: ',self.sheetName)
-        print (self.sheet)
-
-    def print_output_sheet_content(self):
-        print ('')
-        print ('Data of site reference: ')
-        print (self.data_site_reference)
-        print ('')
-        print ('Data of site measures: ')
-        print (self.data_site_measures)
 
 class BEC_project(object):
     def __init__(self,folder,file):
@@ -178,7 +167,6 @@ class BEC_project(object):
             TEMP_site_measures_df.iloc[0,1]='Project Code'
             TEMP_site_measures_df.iloc[0,2]='Tab'
             TEMP_site_measures_df.iloc[0,3]='ID Measures'
-            #TEMP_site_measures_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_measures_df.iloc[0, 16:20]))
             self.site_measures = TEMP_site_measures_df
     #Non Domestic Reference
         if (len(list_reference) > 0):
@@ -195,7 +183,6 @@ class BEC_project(object):
             TEMP_site_reference_df.insert(int(floor_area+1), 'Number', 'Num')
             TEMP_site_reference_df.loc[1:,'Unit']=TEMP_site_reference_df.iloc[1:,int(floor_area)].astype(str).str.replace(r'\d+(\.?)\d+','',regex=True)
             TEMP_site_reference_df.loc[1:, 'Number'] = TEMP_site_reference_df.iloc[1:, int(floor_area)].astype(str).str.extract(r'(\d+(\.?)\d+)',expand=False)[0]
-            #TEMP_site_reference_df.iloc[0,16:20]=(deal_with_strange_characters(TEMP_site_reference_df.iloc[0, 16:20]))
             self.site_references=TEMP_site_reference_df
 
     # Function that controls extracting functions
@@ -285,15 +272,9 @@ class BEC_project(object):
             else:
                 print (self.project_name,'hasnt printed',file_name,'probably because of mismatch headers between files (not tabs)')
 
-            # Append to the whole df which is not recommended
-            # extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,
-            #                              keep_default_na=False, header=None, index=False)
-            # extracted_df = extracted_df.drop(extracted_df.index[0])
-            # lastest_update_df = extracted_df.append(current_df, sort=False, ignore_index=True)
-            # lastest_update_df.to_excel(self.out_put_folder + file_name + '.xlsx', file_name, header=False,index=False)
-
     # Add data into an excel file
     def add_project(self):
+        # Used these lines for writting to seperated folders for each year
         # if not os.path.exists(path + 'BEC ' + self.project_year + ' Shared Data/'):
         #     os.makedirs(path + 'BEC ' + self.project_year + ' Shared Data/')
         # self.out_put_folder = path + 'BEC ' + self.project_year + ' Shared Data/'
@@ -306,44 +287,27 @@ class BEC_project(object):
         self.write_files(self.site_measures,'Site Measures')
         self.write_files(self.site_references,'Site References')
 
-    def print_list_sheet(self):
-        print (self.bec_file.sheet_names)
-
-    def print_original_sheet(self):
-        for sheetName in self.bec_file.sheet_names:
-            if ('Non Domestic' in sheetName):
-                self.BEC_worksheet[sheetName].print_input_sheet_content()
-            elif ('Project Summary' == sheetName or 'Beneficiary' == sheetName):
-                print ('File name: ', self.project_name)
-                print ('Sheet name: ', sheetName)
-                print (self.BEC_worksheet[sheetName])
-
-    def print_output_sheets(self):
-        if self.check_available_result():
-            print ('Project summary',self.project_summary_dataframe)
-            print ('Beneficiary', self.beneficiary_dataframe)
-            print ('Site references', self.site_references)
-            print ('Site measures', self.site_measures)
-        else:
-            print ('Need to run extract_data() to execute input file to have results')
-
+# Check 2 lists if they are different or not
 def check_different(list1,list2):
     if len(list(set(list1)-set(list2)))>0:
         return True
     return False
 
+# Checking a text with a list of text to see how different it is. If it is completely different then it is marked as "missing" or "different" if not so much different
 def check_header(text,list_text):
     for i in list_text:
         if fuzz.ratio(i,text)>=92:
             return ['different',list_text.index(i)]
     return ['missing']
 
+# Filling empty values into blank columns of a dataframe that doesnt have the column as in another dataframe
 def fill_empty_value_into_blank_columns(new_column,current_df):
     current_df.insert(new_column[1], 'Empty Value', new_column[0])
     current_df.columns = [i for i in range(len(current_df.columns))]
     current_df.iloc[1:, new_column[1]] = ''
     return current_df
 
+# Find the differences between 2 lists. A flag is passed into the function to ask for the corresponding results
 def find_difference(list1,list2,flag):
     index_list_different, index_list_missing=None,None
     if len(list(set(list1)-set(list2))):
@@ -358,36 +322,25 @@ def find_difference(list1,list2,flag):
         return index_list_different
     return
 
-def find_details_of_deferences(list1,list2):
-    diff = list(set(list1).symmetric_difference(set(list2)))
-    index_list1 = []
-    index_list2 = []
-    for i in diff:
-        if i in list1:
-            index_list1.append([i,list1.index(i)])
-        elif i in list2:
-            index_list2.append([i,list2.index(i)])
-    index_list1.sort(key=lambda x: x[1])
-    index_list2.sort(key=lambda x: x[1])
-    return index_list1,index_list2
-
-def deal_with_strange_characters(series):
-    series=series.apply(lambda x:x.encode('utf-8').decode('utf-8'))
-    return series
-
+# Unprotect files if necessary
 def unprotect_xlsm_file(path,filename,passw):
     xcl = win32com.client.Dispatch('Excel.Application')
     #Pass for files in 2018 'Bec2018dec2017'
+    #Pass for files in 2017 'Bec141116'
+    #Pass for files in 2016 'bec060314'
+    #Pass for files in 2015 'bec050314'
     pw_str = passw
     wb = xcl.Workbooks.Open(path+filename,False,True,None,pw_str)
     xcl.DisplayAlerts=False
     wb.SaveAs(path+filename+'x',None,'','')
     xcl.Quit()
 
+# List all files in a folder
 def access_to_working_file(folder_name):
     files = os.listdir(path+folder_name)
     return files
 
+# Executing each project file in a year
 def execute_each_project_in_a_year(folder_name):
     file_list =access_to_working_file(folder_name)
     errors = []
@@ -411,27 +364,29 @@ def execute_each_project_in_a_year(folder_name):
        print ('')
        print ('Errors: ',len(errors),errors)
 
+# Check if all non domestic tabs in a BEC file having he same header format
 def check_site_measures_units_each_file(BECobject):
-    expected_value = next(iter(BECobject.site_measures_units.values()))  # check for an empty dictionary first if that's possible
+    # check for an empty dictionary first if that's possible
+    expected_value = next(iter(BECobject.site_measures_units.values()))
     all_equal = all(value == expected_value for value in BECobject.site_measures_units.values())
     if all_equal:
         return True
     return False
 
+# Get the path for the working folder (BEC [year]), for example: BEC 2018 or BEC 2017
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list[::-1]:
         if re.search(r'^BEC \d+$',folder_name):
-            print ('Checking folder',folder_name)
+            print ('Executing folder',folder_name)
             execute_each_project_in_a_year(folder_name)
 
+# Extract data randomly
 def extract_randomly_data():
     selected_folder = input('Choose folder to select: ')
     selected_file = input('Choose file to select: ')
-    extracted_headers = pd.read_excel(path + selected_folder+' Shared Data/' + selected_file + '.xlsx', selected_file,
-                                      keep_default_na=False, header=None, index=False, nrows=1)
-    extracted_data = pd.read_excel(path + selected_folder+' Shared Data/' + selected_file + '.xlsx', selected_file,
-                                   keep_default_na=False, header=None, index=False)
+    extracted_headers = pd.read_excel(path + selected_folder+' Shared Data/' + selected_file + '.xlsx', selected_file,keep_default_na=False, header=None, index=False, nrows=1)
+    extracted_data = pd.read_excel(path + selected_folder+' Shared Data/' + selected_file + '.xlsx', selected_file,keep_default_na=False, header=None, index=False)
     numb_of_rand_data = int(input('Number of data points: '))
     random_selected_data = extracted_data.iloc[1:, :].sample(numb_of_rand_data)
     result = extracted_headers.append(random_selected_data,sort=False)
