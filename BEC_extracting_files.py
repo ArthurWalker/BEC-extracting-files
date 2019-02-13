@@ -25,7 +25,7 @@ class BEC_Non_Domestic(object):
         self.sheet = pd.read_excel(bec_file,sheetName,keep_default_na =False,header=None).dropna(thresh=1)
         self.data_site_reference = ''
         self.data_site_measures = ''
-
+        self.data_site_measure_unit=[]
     # Extract input data from non domestic tab
     def extract_data_from_input_sheet(self):
         #print (self.tab)
@@ -47,6 +47,7 @@ class BEC_Non_Domestic(object):
         last_column_unit = self.sheet.iloc[proposed_engergy_upgrade_index,0:][self.sheet.iloc[proposed_engergy_upgrade_index,0:]=='Energy Credits'].index.tolist()[-1]
         columns_to_drop_unit = self.sheet.iloc[proposed_engergy_upgrade_index, extracted_column_index_for_site_measures_energy_upgrades:last_column_unit+1][self.sheet.iloc[proposed_engergy_upgrade_index, extracted_column_index_for_site_measures_energy_upgrades:last_column_unit+1].isin(['Milestone', 'Invoice', '','Milestone Claim','Amount'])].index.tolist()
         TEMP_data_site_measures_unit = self.sheet.iloc[proposed_engergy_upgrade_index:25, extracted_column_index_for_site_measures_energy_upgrades:last_column_unit+1].drop(proposed_engergy_upgrade_index+1,axis=0).reset_index(drop=True).drop(columns_to_drop_unit,axis=1)
+        self.data_site_measure_unit = TEMP_data_site_measures_unit.iloc[0].tolist()
         TEMP_data_site_measures = pd.concat([TEMP_data_site_measures_proposed_energy_upgrades,TEMP_data_site_measures_unit],axis=1,sort=False)
         TEMP_data_site_measures.columns = [i for i in range(TEMP_data_site_measures.shape[1])]
         self.data_site_measures = TEMP_data_site_measures.loc[~TEMP_data_site_measures[0].astype(str).isin(['Total','','-',' '])]
@@ -79,6 +80,7 @@ class BEC_project(object):
         self.project_summary_dataframe = None
         self.site_references = None
         self.site_measures = None
+        self.site_measures_units = {}
         for sheetName in self.bec_file.sheet_names:
             if ('Project Summary' == sheetName):
                 self.BEC_worksheet[sheetName] = pd.read_excel(self.bec_file, sheetName, keep_default_na=False,header=None)
@@ -159,6 +161,7 @@ class BEC_project(object):
                 non_domestic_measures=non_domestic_measures.drop(0,axis=0)
             non_domestic_measures.insert(0, '1', non_domestic_sheet)
             list_measures.append(non_domestic_measures)
+            self.site_measures_units[non_domestic_sheet]=self.BEC_worksheet[non_domestic_sheet].data_site_measure_unit
         # Non Domestic Reference
             non_domestic_reference= self.BEC_worksheet[non_domestic_sheet].extract_data_from_input_sheet()[1].transpose()
             non_domestic_reference.insert(0, '2', int(re.search(r'\b\d+\b',non_domestic_sheet).group()))
@@ -280,7 +283,7 @@ class BEC_project(object):
                 current_df.iloc[1:, :].to_excel(writer, file_name, index=False, header=False,startrow=writer.sheets[file_name].max_row)
                 writer.save()
             else:
-                print (self.project_name,'hasnt printed',file_name)
+                print (self.project_name,'hasnt printed',file_name,'probably because of mismatch headers between files (not tabs)')
 
             # Append to the whole df which is not recommended
             # extracted_df = pd.read_excel(self.out_put_folder + file_name + '.xlsx', file_name,
@@ -299,7 +302,7 @@ class BEC_project(object):
         self.out_put_folder= path+'BEC Shared Data/'
         self.write_files(self.project_summary_dataframe,'Project Summary')
         if (self.beneficiary_dataframe is not None):
-          self.write_files(self.beneficiary_dataframe,'Beneficiary')
+         self.write_files(self.beneficiary_dataframe,'Beneficiary')
         self.write_files(self.site_measures,'Site Measures')
         self.write_files(self.site_references,'Site References')
 
@@ -394,16 +397,26 @@ def execute_each_project_in_a_year(folder_name):
                 try:
                     temp_file = BEC_project(folder_name,file_name)
                     temp_file.extract_data()
+                    if (check_site_measures_units_each_file(temp_file)==False):
+                        print('Some tab of measure units in',file_name,'has different headers')
+                        break
                     if (temp_file.check_available_result()):
                         #temp_file.write_seperate_excel_file(folder_name)
                         temp_file.add_project()
                 except Exception:
-                   errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
+                  errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
     else:
         print ('Folder '+folder_name+' is empty')
     if (len(errors)>0):
        print ('')
        print ('Errors: ',len(errors),errors)
+
+def check_site_measures_units_each_file(BECobject):
+    expected_value = next(iter(BECobject.site_measures_units.values()))  # check for an empty dictionary first if that's possible
+    all_equal = all(value == expected_value for value in BECobject.site_measures_units.values())
+    if all_equal:
+        return True
+    return False
 
 def working_with_folder():
     folder_list = os.listdir(path)
@@ -432,8 +445,6 @@ def main():
         start_time = time.time()
         working_with_folder()
         print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',time.asctime(time.localtime(time.time())))
-    else:
-        extract_randomly_data()
 
 if __name__=='__main__':
     main()
