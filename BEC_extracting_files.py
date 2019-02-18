@@ -48,7 +48,7 @@ class BEC_Non_Domestic(object):
         return TEMP_df.append(small_df, ignore_index=True, sort=False)
 
     # Get data for the first half of site measures
-    def extract_first_half_site_measures(self, begin_row_index, last_column_index):
+    def extract_first_half_site_measures(self, begin_row_index, last_column_index,last_line):
         # Set a list of dropped columns of the first half of collected data
         list_dropped_columns_energy = ['Description of Minimum Data Required for Existing Specification',
                                        'Description of Minimum Data Required for Proposed Specification',
@@ -57,11 +57,11 @@ class BEC_Non_Domestic(object):
         columns_to_drop_energy = self.sheet.iloc[begin_row_index + 1, 0:][
             self.sheet.iloc[begin_row_index + 1, 0:].isin(list_dropped_columns_energy)].index.tolist()
         # Extract the first half of data
-        return self.sheet.iloc[begin_row_index + 1:25, 0:last_column_index].reset_index(drop=True).drop(
+        return self.sheet.iloc[begin_row_index + 1:last_line, 0:last_column_index].reset_index(drop=True).drop(
             columns_to_drop_energy, axis=1)
 
     # Get data for second half of site measures
-    def extract_second_half_site_measures(self, begin_row_index, begin_column_index):
+    def extract_second_half_site_measures(self, begin_row_index, begin_column_index,last_line):
         # Identify the last column of second half data
         last_column_unit = self.sheet.iloc[begin_row_index, 0:][
             self.sheet.iloc[begin_row_index, 0:] == 'Energy Credits'].index.tolist()[-1]
@@ -72,19 +72,19 @@ class BEC_Non_Domestic(object):
             self.sheet.iloc[begin_row_index, begin_column_index:last_column_unit + 1].isin(
                 list_dropped_columns_unit)].index.tolist()
         # Extract the second half of data
-        return self.sheet.iloc[begin_row_index:25, begin_column_index:last_column_unit + 1].drop(begin_row_index + 1,
+        return self.sheet.iloc[begin_row_index:last_line, begin_column_index:last_column_unit + 1].drop(begin_row_index + 1,
                                                                                                  axis=0).reset_index(
             drop=True).drop(columns_to_drop_unit, axis=1)
 
     # Merge data of 2 halfs into 1 site measures
-    def extract_site_measures(self, begin_row_index):
+    def extract_site_measures(self, begin_row_index,last_line):
         # Identify the last column of first half set of collected data and starting column of the second half set of collected data
         col_index_energy_upgrades = self.sheet.iloc[begin_row_index, 0:][
             self.sheet.iloc[begin_row_index, 0:] == 'Electrical Savings kWh'].index.tolist()[0]
         TEMP_data_site_measures_proposed_energy_upgrades = self.extract_first_half_site_measures(begin_row_index,
-                                                                                                 col_index_energy_upgrades)
+                                                                                                 col_index_energy_upgrades,last_line)
         TEMP_data_site_measures_unit = self.extract_second_half_site_measures(begin_row_index,
-                                                                              col_index_energy_upgrades)
+                                                                              col_index_energy_upgrades,last_line)
         # Store the unit column for later checking
         self.data_site_measure_unit = TEMP_data_site_measures_unit.iloc[0].tolist()
         # Merge 2 sets of data
@@ -107,7 +107,8 @@ class BEC_Non_Domestic(object):
             proposed_engergy_upgrade_index = 14
         self.data_site_reference = self.extract_site_reference(proposed_engergy_upgrade_index)
         # Extract data for site measures
-        self.data_site_measures = self.extract_site_measures(proposed_engergy_upgrade_index)
+        last_line = self.sheet.iloc[:, 0][self.sheet.iloc[:, 0] == 'Total'].index.tolist()[0]
+        self.data_site_measures = self.extract_site_measures(proposed_engergy_upgrade_index,last_line)
         return [self.data_site_measures, self.data_site_reference]
 
 
@@ -250,6 +251,15 @@ class BEC_project(object):
         self.site_measures_units[non_domestic_sheet] = self.BEC_worksheet[non_domestic_sheet].data_site_measure_unit
         return list_measures
 
+    # Check if all non domestic tabs in a BEC file having the same header format
+    def check_site_measures_units_each_file(self):
+        # check for an empty dictionary first if that's possible
+        expected_value = list(self.site_measures_units.values())[0]
+        all_equal = all(value == expected_value for value in self.site_measures_units.values())
+        if all_equal:
+            return True
+        return False
+
     # Extract non domestic site reference
     def extract_non_domestic_reference(self, non_domestic_sheet, list_reference):
         # Get reference
@@ -262,6 +272,8 @@ class BEC_project(object):
         # Add reference of each tab into a list
         list_reference.append(non_domestic_reference)
         return list_reference
+
+
 
     # Merge data of measures
     def merge_all_tabs_measures(self, list_measures):
@@ -276,6 +288,7 @@ class BEC_project(object):
             TEMP_site_measures_df.iloc[0, 2] = 'Tab'
             TEMP_site_measures_df.iloc[0, 3] = 'ID Measures'
             self.site_measures = TEMP_site_measures_df
+
 
     # Merge data of references
     def merge_all_tabs_reference(self, list_reference):
@@ -301,12 +314,69 @@ class BEC_project(object):
                                                                                          expand=False)[0]
             self.site_references = TEMP_site_reference_df
 
+
+
+    # Tab needed to remove
+    def list_remove_tab(self):
+        dic_removed = {
+            '2018': {
+                'BEC00769': ['4','6','8','9','18'],
+                'BEC00771': ['7','9'],
+                'BEC00781': ['5','6','8','14','15','16'],
+                'BEC00790': ['7','13'],
+                'BEC00792': ['3'],
+                'BEC00807': ['5','7'],
+                'BEC00816': ['6','7','8','11','12'],
+            },
+            '2017':{
+                'BEC 625': ['1','5','21','23'],
+                'BEC 629': ['1','2'],
+                'BEC 632': ['7'],
+                'BEC 00633': ['7'],
+                'BEC 647': ['1'],
+                'BEC 648': ['6','8'],
+                'BEC 653': ['3'],
+                'BEC 661': ['7'],
+                'BEC 662': ['1','2'],
+                'BEC 668': ['5','16','17','19','28'],
+                'BEC 672': ['1'],
+                'BEC 673': ['18'],
+                'BEC 675': ['6'],
+                'BEC 678': ['3','4'],
+                'BEC 679': ['4','5','6','7'],
+                'BEC 710': ['6'],
+                'BEC 711': ['1','3','5','6','7','8'],
+                'BEC 718': ['2']
+            },
+            '2016': {
+                'BEC 00 498': ['13'],
+                'BEC 00466': ['2'],
+                'BEC 00481': ['8','10','17'],
+                'BEC 00485': ['5','6','8','9','13'],
+                'BEC 00510': ['1','9'],
+                'BEC 00517': ['3','13'],
+                'BEC 00521': ['1'],
+                'BEC 00522': ['1'],
+                'BEC 00531': ['3'],
+                'BEC 00532': ['3','4','5','6'],
+                'BEC 00539': ['4'],
+                'BEC 00540': ['4','6'],
+                'BEC 00544': ['1','4','10'],
+                'BEC 00563': ['2','5'],
+                'BEC 00565': ['1'],
+                'BEC 00575': ['3','5'],
+                'BEC 00577': ['4','5','6']
+            },
+            '2015': {}
+        }
+        return dic_removed[self.project_year]
+
     # Collect data from each non domestic data tab in each project
     def extract_non_domestic_data(self):
         # List all non domestic tabs
         non_domestic_list = [i for i in self.BEC_worksheet.keys() if
                              'Non Domestic' in i and int(re.search(r'\b\d+\b', i).group()) in
-                             self.project_summary_dataframe[0].tolist()]
+                             self.project_summary_dataframe[0].tolist() and (self.project_name not in list(self.list_remove_tab().keys()) or re.search(r'\b\d+\b', i).group() not in self.list_remove_tab()[self.project_name])]
         list_measures = []
         list_reference = []
         # Iterating through each tab
@@ -462,7 +532,7 @@ class BEC_project(object):
         if not os.path.exists(path + 'BEC Shared Data/'):
             os.makedirs(path + 'BEC Shared Data/')
         self.out_put_folder = path + 'BEC Shared Data/'
-        # Write each tabs into seperate files
+        #Write each tabs into seperate files
         self.write_files(self.project_summary_dataframe, 'Project Summary')
         if (self.beneficiary_dataframe is not None):
             self.write_files(self.beneficiary_dataframe, 'Beneficiary')
@@ -544,12 +614,12 @@ def execute_each_project_in_a_year(folder_name):
                 try:
                     temp_file = BEC_project(folder_name, file_name)
                     temp_file.extract_data()
-                    if (check_site_measures_units_each_file(temp_file) == False):
-                        print('Some tab of measure units in', file_name, 'has different headers')
-                        break
-                    if (temp_file.check_available_result()):
-                        # temp_file.write_seperate_excel_file(folder_name)
-                        temp_file.add_project()
+                    if (temp_file.check_site_measures_units_each_file() == False):
+                        print('There is an error with header in',temp_file.file_name)
+                    else:
+                        if (temp_file.check_available_result()):
+                            # temp_file.write_seperate_excel_file(folder_name)
+                            temp_file.add_project()
                 except Exception:
                     errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
     else:
@@ -557,16 +627,6 @@ def execute_each_project_in_a_year(folder_name):
     if (len(errors) > 0):
         print('')
         print('Errors: ', len(errors), errors)
-
-
-# Check if all non domestic tabs in a BEC file having he same header format
-def check_site_measures_units_each_file(BECobject):
-    # check for an empty dictionary first if that's possible
-    expected_value = next(iter(BECobject.site_measures_units.values()))
-    all_equal = all(value == expected_value for value in BECobject.site_measures_units.values())
-    if all_equal:
-        return True
-    return False
 
 
 # Get the path for the working folder (BEC [year]), for example: BEC 2018 or BEC 2017
