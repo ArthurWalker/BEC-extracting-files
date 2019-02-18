@@ -317,18 +317,18 @@ class BEC_project(object):
 
 
     # Tab needed to remove
-    def list_remove_tab(self,file,tab):
+    def list_remove_tab(self):
         dic_removed = {
-            'BEC 2018': {
-                'BEC 00769': ['4','6','8','9','18'],
-                'BEC 00771': ['7','9'],
+            '2018': {
+                'BEC00769': ['4','6','8','9','18'],
+                'BEC00771': ['7','9'],
                 'BEC00781': ['5','6','8','14','15','16'],
                 'BEC00790': ['7','13'],
                 'BEC00792': ['3'],
                 'BEC00807': ['5','7'],
                 'BEC00816': ['6','7','8','11','12'],
             },
-            'BEC 2017':{
+            '2017':{
                 'BEC 625': ['1','5','21','23'],
                 'BEC 629': ['1','2'],
                 'BEC 632': ['7'],
@@ -348,7 +348,7 @@ class BEC_project(object):
                 'BEC 711': ['1','3','5','6','7','8'],
                 'BEC 718': ['2']
             },
-            'BEC 2016': {
+            '2016': {
                 'BEC 00 498': ['13'],
                 'BEC 00466': ['2'],
                 'BEC 00481': ['8','10','17'],
@@ -366,18 +366,17 @@ class BEC_project(object):
                 'BEC 00565': ['1'],
                 'BEC 00575': ['3','5'],
                 'BEC 00577': ['4','5','6']
-            }
+            },
+            '2015': {}
         }
         return dic_removed[self.project_year]
-
-
 
     # Collect data from each non domestic data tab in each project
     def extract_non_domestic_data(self):
         # List all non domestic tabs
         non_domestic_list = [i for i in self.BEC_worksheet.keys() if
                              'Non Domestic' in i and int(re.search(r'\b\d+\b', i).group()) in
-                             self.project_summary_dataframe[0].tolist()]
+                             self.project_summary_dataframe[0].tolist() and (self.project_name not in list(self.list_remove_tab().keys()) or re.search(r'\b\d+\b', i).group() not in self.list_remove_tab()[self.project_name])]
         list_measures = []
         list_reference = []
         # Iterating through each tab
@@ -533,7 +532,7 @@ class BEC_project(object):
         if not os.path.exists(path + 'BEC Shared Data/'):
             os.makedirs(path + 'BEC Shared Data/')
         self.out_put_folder = path + 'BEC Shared Data/'
-        # Write each tabs into seperate files
+        #Write each tabs into seperate files
         self.write_files(self.project_summary_dataframe, 'Project Summary')
         if (self.beneficiary_dataframe is not None):
             self.write_files(self.beneficiary_dataframe, 'Beneficiary')
