@@ -127,6 +127,8 @@ class BEC_project(object):
         self.site_references = None
         self.site_measures = None
         self.site_measures_units = {}
+        self.list_Add_addition_row_summary= None
+        self.list_beginn_row_summary = None
         # Store each tab into dictionary
         for sheetName in self.bec_file.sheet_names:
             if ('Project Summary' == sheetName):
@@ -139,27 +141,26 @@ class BEC_project(object):
                 self.BEC_worksheet[sheetName] = pd.read_excel(self.bec_file, sheetName, keep_default_na=False,
                                                               header=None)
 
-    # Prepare_section to get  data for summery data
+    # Prepare_section to get  data for summary data
     def prepare_section_limit_summary_data(self):
         # Convert the first column into all string type
         TEMP_dataframe2 = self.BEC_worksheet['Project Summary'].iloc[:, 0].astype(str)
         # Find beginning row index of the extracted data
-        list_beginning_row = TEMP_dataframe2[
+        self.list_beginn_row_summary = TEMP_dataframe2[
             TEMP_dataframe2.str.contains('Better Energy Communities Programme - Non Domestic Costs',
                                          na=False)].index.tolist()
         # Find the last row index of the extracted data
         TEMP_dataframe = self.BEC_worksheet['Project Summary'].iloc[:, 1].astype(str)
-        list_Add_addition_row = TEMP_dataframe[TEMP_dataframe == 'Add additional rows as required'].index.tolist()
-        if len(list_Add_addition_row) == 0:
-            list_Add_addition_row = TEMP_dataframe2[
+        self.list_Add_addition_row_summary = TEMP_dataframe[TEMP_dataframe == 'Add additional rows as required'].index.tolist()
+        if len(self.list_Add_addition_row_summary) == 0:
+            self.list_Add_addition_row_summary = TEMP_dataframe2[
                 TEMP_dataframe2.str.contains('Better Energy Communities Programme - Domestic Costs',
                                              na=False)].index.tolist()
-        return list_Add_addition_row, list_beginning_row
 
     # Get data of the first half of requested table
-    def first_half_summery_data(self, column_to_collect, list_Add_addition_row, list_beginning_row):
+    def first_half_summary_data(self, column_to_collect):
         TEMP_data_project_summary1 = self.BEC_worksheet['Project Summary'].iloc[
-                                     list_beginning_row[-1] + 2:list_Add_addition_row[0],
+                                     self.list_beginn_row_summary[-1] + 2:self.list_Add_addition_row_summary[0],
                                      0:column_to_collect].reset_index(drop=True).drop(3, axis=1)
         # Get the empty value in the first half of table
         # list_0 = TEMP_data_project_summary1[(TEMP_data_project_summary1.loc[:,1] == 0) |(TEMP_data_project_summary1.iloc[1:,1]=='Facility Name')| (TEMP_data_project_summary1.iloc[1:,1]==' ')].index.tolist()
@@ -178,34 +179,32 @@ class BEC_project(object):
         return TEMP_data_project_summary1
 
     # Get data for the second half of requested data
-    def second_half_summery_data(self, list_Add_addition_row, list_beginning_row):
+    def second_half_summary_data(self):
         # Get index of the second half requested table
-        header_line_boolean = self.BEC_worksheet['Project Summary'].iloc[list_beginning_row[-1]].astype(str).isin(
+        header_line_boolean = self.BEC_worksheet['Project Summary'].iloc[self.list_beginn_row_summary[-1]].astype(str).isin(
             ['Total Project Cost', 'SEAI funding', 'Eligible VAT', 'SEAI Funding'])
         header_line_index = header_line_boolean[header_line_boolean == True].index.tolist()
         if int(self.project_year) == 2016:
             header_line_index = header_line_index[:3]
         # Extract data
         TEMP_data_project_summary2 = self.BEC_worksheet['Project Summary'].iloc[
-                                     list_beginning_row[-1]:list_Add_addition_row[0], header_line_index].drop(
-            [list_beginning_row[-1] + 1, list_beginning_row[-1] + 2], axis=0).reset_index(drop=True)
+                                     self.list_beginn_row_summary[-1]:self.list_Add_addition_row_summary[0], header_line_index].drop(
+            [self.list_beginn_row_summary[-1] + 1, self.list_beginn_row_summary[-1] + 2], axis=0).reset_index(drop=True)
         TEMP_data_project_summary2 = TEMP_data_project_summary2.drop(self.empty_line, axis=0).reset_index(drop=True)
         return TEMP_data_project_summary2
 
     # Extract summary data
     def extract_summary_data(self):
-        list_Add_addition_row, list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs = self.prepare_section_limit_summary_data()
-        if (len(list_Add_addition_row) == 1):
+        self.prepare_section_limit_summary_data()
+        if (len(self.list_Add_addition_row_summary) == 1):
             if int(self.project_year) >= 2017:
                 column_to_collect = 6
             else:
                 column_to_collect = 4
-            # GEt first half of summery data
-            TEMP_data_project_summary1 = self.first_half_summery_data(column_to_collect, list_Add_addition_row,
-                                                                      list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs)
+            # GEt first half of summary data
+            TEMP_data_project_summary1 = self.first_half_summary_data(column_to_collect)
             # Get data of the second half of requested table
-            TEMP_data_project_summary2 = self.second_half_summery_data(list_Add_addition_row,
-                                                                       list_Values_Better_Energy_Communities_Programes_Non_Domestic_costs)
+            TEMP_data_project_summary2 = self.second_half_summary_data()
             # Merge 2 tables into 1
             data_project_summary = pd.concat([TEMP_data_project_summary1, TEMP_data_project_summary2], axis=1,
                                              sort=False)
@@ -218,22 +217,37 @@ class BEC_project(object):
         else:
             print('Can not identify as there are more "Add additional rows as required" or no results in',self.file_name)
 
-    # Extract beneficiary data
+    # Extract beneficiary data in Beneficiary tab
     def extract_beneficiary_data(self):
         # Identify the first row index
         starting_scanning_line = self.BEC_worksheet['Beneficiary'].iloc[0:, 1][
             self.BEC_worksheet['Beneficiary'].iloc[:, 1] == 'Beneficiary Name'].index.tolist()[0]
         # Extract data
         TEMP_data_beneficiary = self.BEC_worksheet['Beneficiary'].iloc[starting_scanning_line:, 1]
+        return TEMP_data_beneficiary
+
+    # Extract beneficiary data in Summary tab
+    def extract_beneficiary_data_in_summary(self):
+        # Identify column contain Beneficiary
+        series_contain_value = self.BEC_worksheet['Project Summary'].iloc[self.list_beginn_row_summary[0]+2]
+        try:
+            column_index = series_contain_value[series_contain_value.isin(['Beneficiary Name','Name of Beneficiary'])].index.tolist()[0]
+        except Exception:
+            print ('Cant find the index of column Beneficiary in Project Summary of ',self.file_name)
+        # Extract data
+        TEMP_data_beneficiary = self.BEC_worksheet['Project Summary'].iloc[self.list_beginn_row_summary[0]+2:self.list_Add_addition_row_summary[0],column_index].reset_index(drop=True).drop(self.empty_line, axis=0).reset_index(drop=True)
+        return TEMP_data_beneficiary
+
+    def finilize_beneficiary_extraction(self,TEMP_data_beneficiary):
         # Remove unnecessay data and reindex rows
         data_beneficiary = TEMP_data_beneficiary.loc[~TEMP_data_beneficiary.isin(
-            ['Total Project Cost', '', 'Enter Name of Beneficiary', 'Enter Name of Beneficiary ', 'Name Of Beneficiary',
-             0])].to_frame().reset_index(drop=True)
+            ['Total Project Cost', '', 'Enter Name of Beneficiary', 'Enter Name of Beneficiary ', 'Name Of Beneficiary',0])].to_frame().reset_index(drop=True)
         # Add columns
         data_beneficiary.insert(0, 0, self.project_name)
         data_beneficiary.iloc[0, 0] = 'Project Code'
         data_beneficiary.insert(0, '-1', self.project_year)
         data_beneficiary.iloc[0, 0] = 'Year'
+        data_beneficiary.iloc[0,-1]='Beneficiary Name'
         self.beneficiary_dataframe = data_beneficiary
 
     # Extract non domestic measures
@@ -315,8 +329,7 @@ class BEC_project(object):
             self.site_references = TEMP_site_reference_df
 
 
-
-    # Tab needed to remove
+    #Tab needed to remove
     def list_remove_tab(self):
         dic_removed = {
             '2018': {
@@ -371,6 +384,7 @@ class BEC_project(object):
         }
         return dic_removed[self.project_year]
 
+
     # Collect data from each non domestic data tab in each project
     def extract_non_domestic_data(self):
         # List all non domestic tabs
@@ -393,8 +407,13 @@ class BEC_project(object):
     # Function that controls extracting functions
     def extract_data(self):
         self.extract_summary_data()
+        # If Beneficiary tab in list of tabs then extract or else look at Project Summary tab
         if 'Beneficiary' in self.bec_file.sheet_names:
-            self.extract_beneficiary_data()
+            temp_beneficiary = self.extract_beneficiary_data()
+            self.finilize_beneficiary_extraction(temp_beneficiary)
+        else:
+            temp_beneficiary = self.extract_beneficiary_data_in_summary()
+            self.finilize_beneficiary_extraction(temp_beneficiary)
         self.extract_non_domestic_data()
 
     # Checking if attributes are available or not
@@ -533,11 +552,11 @@ class BEC_project(object):
             os.makedirs(path + 'BEC Shared Data/')
         self.out_put_folder = path + 'BEC Shared Data/'
         #Write each tabs into seperate files
-        self.write_files(self.project_summary_dataframe, 'Project Summary')
+        #self.write_files(self.project_summary_dataframe, 'Project Summary')
         if (self.beneficiary_dataframe is not None):
             self.write_files(self.beneficiary_dataframe, 'Beneficiary')
-        self.write_files(self.site_measures, 'Site Measures')
-        self.write_files(self.site_references, 'Site References')
+        #self.write_files(self.site_measures, 'Site Measures')
+        #self.write_files(self.site_references, 'Site References')
 
 
 # Check 2 lists if they are different or not
