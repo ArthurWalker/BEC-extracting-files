@@ -250,6 +250,8 @@ class BEC_project(object):
         data_beneficiary.iloc[0,-1]='Beneficiary Name'
         self.beneficiary_dataframe = data_beneficiary
 
+
+
     # Extract non domestic measures
     def extract_non_domestic_measure(self, non_domestic_sheet, list_measures):
         # Get measures
@@ -511,6 +513,23 @@ class BEC_project(object):
                         current_df.iloc[0, column[1]] = extracted_df.iloc[0, column[1]]
         return current_df, extracted_df
 
+    # Add data into an excel file
+    def add_project(self):
+        # Used these lines for writting to seperated folders for each year
+        # if not os.path.exists(path + 'BEC ' + self.project_year + ' Shared Data/'):
+        #     os.makedirs(path + 'BEC ' + self.project_year + ' Shared Data/')
+        # self.out_put_folder = path + 'BEC ' + self.project_year + ' Shared Data/'
+        # Create a shared folder for all files in all years
+        if not os.path.exists(path + 'BEC Shared Data/'):
+            os.makedirs(path + 'BEC Shared Data/')
+        self.out_put_folder = path + 'BEC Shared Data/'
+        #Write each tabs into seperate files
+        #self.write_files(self.project_summary_dataframe, 'Project Summary')
+        if (self.beneficiary_dataframe is not None):
+            self.write_files(self.beneficiary_dataframe, 'Beneficiary')
+        #self.write_files(self.site_measures, 'Site Measures')
+        #self.write_files(self.site_references, 'Site References')
+
     # Write all data into 4 shared files
     def write_files(self, dataframe, file_name):
         # Create a shared file
@@ -540,23 +559,6 @@ class BEC_project(object):
             else:
                 print(self.project_name, 'hasnt printed', file_name,
                       'probably because of mismatch headers between files (not tabs)')
-
-    # Add data into an excel file
-    def add_project(self):
-        # Used these lines for writting to seperated folders for each year
-        # if not os.path.exists(path + 'BEC ' + self.project_year + ' Shared Data/'):
-        #     os.makedirs(path + 'BEC ' + self.project_year + ' Shared Data/')
-        # self.out_put_folder = path + 'BEC ' + self.project_year + ' Shared Data/'
-        # Create a shared folder for all files in all years
-        if not os.path.exists(path + 'BEC Shared Data/'):
-            os.makedirs(path + 'BEC Shared Data/')
-        self.out_put_folder = path + 'BEC Shared Data/'
-        #Write each tabs into seperate files
-        #self.write_files(self.project_summary_dataframe, 'Project Summary')
-        if (self.beneficiary_dataframe is not None):
-            self.write_files(self.beneficiary_dataframe, 'Beneficiary')
-        #self.write_files(self.site_measures, 'Site Measures')
-        #self.write_files(self.site_references, 'Site References')
 
 
 # Check 2 lists if they are different or not
