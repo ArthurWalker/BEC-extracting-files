@@ -524,11 +524,11 @@ class BEC_project(object):
             os.makedirs(path + 'BEC Shared Data/')
         self.out_put_folder = path + 'BEC Shared Data/'
         #Write each tabs into seperate files
-        #self.write_files(self.project_summary_dataframe, 'Project Summary')
+        self.write_files(self.project_summary_dataframe, 'Project Summary')
         if (self.beneficiary_dataframe is not None):
             self.write_files(self.beneficiary_dataframe, 'Beneficiary')
-        #self.write_files(self.site_measures, 'Site Measures')
-        #self.write_files(self.site_references, 'Site References')
+        self.write_files(self.site_measures, 'Site Measures')
+        self.write_files(self.site_references, 'Site References')
 
     # Write all data into 4 shared files
     def write_files(self, dataframe, file_name):
