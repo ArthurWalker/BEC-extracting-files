@@ -194,9 +194,17 @@ class BEC_project(object):
     # Get data for the second half of requested data
     def second_half_summary_data(self):
         # Get index of the second half requested table
-        header_line_boolean = self.BEC_worksheet['Project Summary'].iloc[self.list_beginn_row_summary[-1]].astype(str).isin(
-            ['Total Project Cost', 'SEAI funding', 'Eligible VAT', 'SEAI Funding'])
-        header_line_index = header_line_boolean[header_line_boolean == True].index.tolist()
+        header_line_index = []
+        if int(self.project_year) <= 2014:
+            for i in ['Total Project Cost', 'SEAI funding', 'Eligible VAT', 'SEAI Funding']:
+                indexies = self.BEC_worksheet['Project Summary'].iloc[self.list_beginn_row_summary[-1]].astype(str) == i
+                lst = indexies[indexies == True].index.tolist()
+                if len(lst)> 0 :
+                    header_line_index.append(lst[-1])
+        else:
+            header_line_boolean = self.BEC_worksheet['Project Summary'].iloc[self.list_beginn_row_summary[-1]].astype(str).isin(['Total Project Cost', 'SEAI funding', 'Eligible VAT', 'SEAI Funding'])
+            header_line_index = header_line_boolean[header_line_boolean == True].index.tolist()
+        header_line_index = sorted(header_line_index)
         if int(self.project_year) == 2016:
             header_line_index = header_line_index[:3]
         # Extract data
