@@ -19,17 +19,18 @@ path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 class Batch(object):
     def __init__(self):
-
+        return
 
 class Admin(object):
     def __int__(self):
-
+        return
 
 class MainWorkbook(object):
     def __init__(self):
-
+        return
 
 def main():
+    path_lst = os.listdir(path)
 
 
 if __name__ == '__main__':
