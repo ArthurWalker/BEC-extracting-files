@@ -8,6 +8,7 @@ import sys
 import win32com.client
 import time
 from tqdm import tqdm
+import xlwings as xw
 import openpyxl
 from openpyxl import load_workbook
 from fuzzywuzzy import fuzz
@@ -143,11 +144,17 @@ class BEC_project(object):
 
     # Prepare_section to get  data for summary data
     def prepare_section_limit_summary_data(self):
+        if int(self.project_year)>2014:
         # Convert the first column into all string type
-        TEMP_dataframe2 = self.BEC_worksheet['Project Summary'].iloc[:, 0].astype(str)
+            TEMP_dataframe2 = self.BEC_worksheet['Project Summary'].iloc[:, 0].astype(str)
         # Find beginning row index of the extracted data
-        self.list_beginn_row_summary = TEMP_dataframe2[
+            self.list_beginn_row_summary = TEMP_dataframe2[
             TEMP_dataframe2.str.contains('Better Energy Communities Programme - Non Domestic Costs',
+                                         na=False)].index.tolist()
+        else:
+            TEMP_dataframe2 = self.BEC_worksheet['Project Summary'].iloc[:, 1].astype(str)
+            self.list_beginn_row_summary = TEMP_dataframe2[
+            TEMP_dataframe2.str.contains('Project Location',
                                          na=False)].index.tolist()
         # Find the last row index of the extracted data
         TEMP_dataframe = self.BEC_worksheet['Project Summary'].iloc[:, 1].astype(str)
@@ -382,7 +389,9 @@ class BEC_project(object):
                 'BEC 00575': ['3','5'],
                 'BEC 00577': ['4','5','6']
             },
-            '2015': {}
+            '2015': {},
+            '2014': {},
+            '2013': {}
         }
         return dic_removed[self.project_year]
 
@@ -414,8 +423,9 @@ class BEC_project(object):
             temp_beneficiary = self.extract_beneficiary_data()
             self.finilize_beneficiary_extraction(temp_beneficiary)
         else:
-            temp_beneficiary = self.extract_beneficiary_data_in_summary()
-            self.finilize_beneficiary_extraction(temp_beneficiary)
+            if int(self.project_year) > 2014:
+                temp_beneficiary = self.extract_beneficiary_data_in_summary()
+                self.finilize_beneficiary_extraction(temp_beneficiary)
         self.extract_non_domestic_data()
 
     # Checking if attributes are available or not
@@ -631,8 +641,8 @@ def execute_each_project_in_a_year(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('.xlsm' in file_name or '.xlsx' in file_name or '.xls' in file_name):
-                try:
+            if ('.xlsm' in file_name or '.xlsx' in file_name or '.xls' in file_name) and 'BEC' in file_name:
+                #try:
                     temp_file = BEC_project(folder_name, file_name)
                     temp_file.extract_data()
                     if (temp_file.check_site_measures_units_each_file() == False):
@@ -641,7 +651,7 @@ def execute_each_project_in_a_year(folder_name):
                         if (temp_file.check_available_result()):
                             # temp_file.write_seperate_excel_file(folder_name)
                             temp_file.add_project()
-                except Exception:
+                #except Exception:
                     errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
     else:
         print('Folder ' + folder_name + ' is empty')
@@ -654,7 +664,7 @@ def execute_each_project_in_a_year(folder_name):
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list[::-1]:
-        if re.search(r'^BEC \d+$', folder_name):
+        if re.search(r'^BEC \d+$', folder_name) and folder_name=='BEC 2013':
             print('Executing folder', folder_name)
             execute_each_project_in_a_year(folder_name)
 
