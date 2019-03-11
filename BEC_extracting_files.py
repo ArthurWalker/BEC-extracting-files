@@ -19,6 +19,12 @@ import win32com
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 
+# Pass for files in 2018 'Bec2018dec2017'
+# Pass for files in 2017 'Bec141116'
+# Pass for files in 2016 'bec060314'
+# Pass for files in 2015 'bec050314'
+# Pass for files in 2014 'bec060314'
+
 class BEC_Non_Domestic(object):
     def __init__(self, bec_file, sheetName, project_name, file_name, tab):
         self.fileName = file_name
@@ -120,11 +126,7 @@ class BEC_project(object):
         self.out_put_folder = ''
         self.project_name = re.search(r'BEC(\s|\_?)\d+(\s?)\d+', file).group()
         self.project_year = re.search(r'\d+', self.input_folder).group()
-        try:
-           self.bec_file = pd.ExcelFile(self.input_folder + file)
-        except xlrd.biffh.XLRDError:
-           unprotect_xlsm_file(self.input_folder+file,self.project_year)
-           self.bec_file = pd.ExcelFile(self.input_folder + file)
+        self.bec_file = pd.ExcelFile(self.input_folder + file)
         self.BEC_worksheet = {}
         self.empty_line = []
         self.beneficiary_dataframe = None
@@ -619,26 +621,6 @@ def find_difference(list1, list2, flag):
     return
 
 
-# Unprotect files if necessary
-def unprotect_xlsm_file(path_filename,year):
-    xcl = win32com.client.Dispatch('Excel.Application')
-    xcl.Interactive = False
-    # Pass for files in 2018 'Bec2018dec2017'
-    # Pass for files in 2017 'Bec141116'
-    # Pass for files in 2016 'bec060314'
-    # Pass for files in 2015 'bec050314'
-    # Pass for files in 2014 'bec060314'
-    if year =='2014':
-        pw_str = 'bec060314'
-    else:
-        pw_str =''
-    wb = xcl.Workbooks.Open(path_filename, False, True, None, pw_str)
-    #return wb.WorkSheets('Project Summary')
-    xcl.DisplayAlerts = False
-    wb.SaveAs(path_filename, None, '', '')
-    xcl.Quit()
-
-
 # List all files in a folder
 def access_to_working_file(folder_name):
     files = os.listdir(path + folder_name)
@@ -662,7 +644,7 @@ def execute_each_project_in_a_year(folder_name):
                             # temp_file.write_seperate_excel_file(folder_name)
                             temp_file.add_project()
                 #except Exception:
-                    #errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
+                #    errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
     else:
         print('Folder ' + folder_name + ' is empty')
     if (len(errors) > 0):
@@ -674,7 +656,7 @@ def execute_each_project_in_a_year(folder_name):
 def working_with_folder():
     folder_list = os.listdir(path)
     for folder_name in folder_list[::-1]:
-        if re.search(r'^BEC \d+$', folder_name) and folder_name=='BEC 2014':
+        if re.search(r'^BEC \d+$', folder_name):
             print('Executing folder', folder_name)
             execute_each_project_in_a_year(folder_name)
 
