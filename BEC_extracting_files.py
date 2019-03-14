@@ -577,8 +577,7 @@ class BEC_project(object):
                 writer = pd.ExcelWriter(self.out_put_folder + file_name + '.xlsx', engine='openpyxl')
                 writer.book = book
                 writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-                current_df.iloc[1:, :].to_excel(writer, file_name, index=False, header=False,
-                                                startrow=writer.sheets[file_name].max_row)
+                current_df.iloc[1:, :].to_excel(writer, file_name, index=False, header=False,startrow=writer.sheets[file_name].max_row)
                 writer.save()
             else:
                 print(self.project_name, 'hasnt printed', file_name,
