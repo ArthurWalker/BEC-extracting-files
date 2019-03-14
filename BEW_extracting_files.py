@@ -58,6 +58,9 @@ def find_column(df_1_line,lst_to_find):
     return df_1_line[df_1_line.astype(str).isin(lst_to_find)].index.tolist()
 
 def write_to_1_file(df,path):
+    empty_list = df[df[1] == ''].index.tolist()
+    if (len(empty_list) > 0):
+        df = (df.drop(empty_list, axis=0).reset_index(drop=True))
     new_path = path + 'Shared Data Evaluation/'
     if not os.path.exists(path + 'Shared Data Evaluation/'):
         os.makedirs(path + 'Shared Data Evaluation/')
