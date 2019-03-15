@@ -5,18 +5,25 @@ import numpy as np
 import re
 import os
 import sys
-import win32com.client
 import time
 from tqdm import tqdm
+import xlwings
 import openpyxl
 from openpyxl import load_workbook
 from fuzzywuzzy import fuzz
 import msoffcrypto
 import xlrd
+import win32com
 
 # Set initial working path for the script
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
+
+# Pass for files in 2018 'Bec2018dec2017'
+# Pass for files in 2017 'Bec141116'
+# Pass for files in 2016 'bec060314'
+# Pass for files in 2015 'bec050314'
+# Pass for files in 2014 'bec060314'
 
 class BEC_Non_Domestic(object):
     def __init__(self, bec_file, sheetName, project_name, file_name, tab):
@@ -143,11 +150,17 @@ class BEC_project(object):
 
     # Prepare_section to get  data for summary data
     def prepare_section_limit_summary_data(self):
+        if int(self.project_year)>2014:
         # Convert the first column into all string type
-        TEMP_dataframe2 = self.BEC_worksheet['Project Summary'].iloc[:, 0].astype(str)
+            TEMP_dataframe2 = self.BEC_worksheet['Project Summary'].iloc[:, 0].astype(str)
         # Find beginning row index of the extracted data
-        self.list_beginn_row_summary = TEMP_dataframe2[
+            self.list_beginn_row_summary = TEMP_dataframe2[
             TEMP_dataframe2.str.contains('Better Energy Communities Programme - Non Domestic Costs',
+                                         na=False)].index.tolist()
+        else:
+            TEMP_dataframe2 = self.BEC_worksheet['Project Summary'].iloc[:, 1].astype(str)
+            self.list_beginn_row_summary = TEMP_dataframe2[
+            TEMP_dataframe2.str.contains('Project Location',
                                          na=False)].index.tolist()
         # Find the last row index of the extracted data
         TEMP_dataframe = self.BEC_worksheet['Project Summary'].iloc[:, 1].astype(str)
@@ -181,9 +194,17 @@ class BEC_project(object):
     # Get data for the second half of requested data
     def second_half_summary_data(self):
         # Get index of the second half requested table
-        header_line_boolean = self.BEC_worksheet['Project Summary'].iloc[self.list_beginn_row_summary[-1]].astype(str).isin(
-            ['Total Project Cost', 'SEAI funding', 'Eligible VAT', 'SEAI Funding'])
-        header_line_index = header_line_boolean[header_line_boolean == True].index.tolist()
+        header_line_index = []
+        if int(self.project_year) <= 2014:
+            for i in ['Total Project Cost', 'SEAI funding', 'Eligible VAT', 'SEAI Funding']:
+                indexies = self.BEC_worksheet['Project Summary'].iloc[self.list_beginn_row_summary[-1]].astype(str) == i
+                lst = indexies[indexies == True].index.tolist()
+                if len(lst)> 0 :
+                    header_line_index.append(lst[-1])
+        else:
+            header_line_boolean = self.BEC_worksheet['Project Summary'].iloc[self.list_beginn_row_summary[-1]].astype(str).isin(['Total Project Cost', 'SEAI funding', 'Eligible VAT', 'SEAI Funding'])
+            header_line_index = header_line_boolean[header_line_boolean == True].index.tolist()
+        header_line_index = sorted(header_line_index)
         if int(self.project_year) == 2016:
             header_line_index = header_line_index[:3]
         # Extract data
@@ -249,6 +270,8 @@ class BEC_project(object):
         data_beneficiary.iloc[0, 0] = 'Year'
         data_beneficiary.iloc[0,-1]='Beneficiary Name'
         self.beneficiary_dataframe = data_beneficiary
+
+
 
     # Extract non domestic measures
     def extract_non_domestic_measure(self, non_domestic_sheet, list_measures):
@@ -380,7 +403,9 @@ class BEC_project(object):
                 'BEC 00575': ['3','5'],
                 'BEC 00577': ['4','5','6']
             },
-            '2015': {}
+            '2015': {},
+            '2014': {},
+            '2013': {}
         }
         return dic_removed[self.project_year]
 
@@ -412,8 +437,9 @@ class BEC_project(object):
             temp_beneficiary = self.extract_beneficiary_data()
             self.finilize_beneficiary_extraction(temp_beneficiary)
         else:
-            temp_beneficiary = self.extract_beneficiary_data_in_summary()
-            self.finilize_beneficiary_extraction(temp_beneficiary)
+            if int(self.project_year) > 2014:
+                temp_beneficiary = self.extract_beneficiary_data_in_summary()
+                self.finilize_beneficiary_extraction(temp_beneficiary)
         self.extract_non_domestic_data()
 
     # Checking if attributes are available or not
@@ -511,6 +537,23 @@ class BEC_project(object):
                         current_df.iloc[0, column[1]] = extracted_df.iloc[0, column[1]]
         return current_df, extracted_df
 
+    # Add data into an excel file
+    def add_project(self):
+        # Used these lines for writting to seperated folders for each year
+        # if not os.path.exists(path + 'BEC ' + self.project_year + ' Shared Data/'):
+        #     os.makedirs(path + 'BEC ' + self.project_year + ' Shared Data/')
+        # self.out_put_folder = path + 'BEC ' + self.project_year + ' Shared Data/'
+        # Create a shared folder for all files in all years
+        if not os.path.exists(path + 'BEC Shared Data/'):
+            os.makedirs(path + 'BEC Shared Data/')
+        self.out_put_folder = path + 'BEC Shared Data/'
+        #Write each tabs into seperate files
+        self.write_files(self.project_summary_dataframe, 'Project Summary')
+        if (self.beneficiary_dataframe is not None):
+            self.write_files(self.beneficiary_dataframe, 'Beneficiary')
+        self.write_files(self.site_measures, 'Site Measures')
+        self.write_files(self.site_references, 'Site References')
+
     # Write all data into 4 shared files
     def write_files(self, dataframe, file_name):
         # Create a shared file
@@ -534,29 +577,11 @@ class BEC_project(object):
                 writer = pd.ExcelWriter(self.out_put_folder + file_name + '.xlsx', engine='openpyxl')
                 writer.book = book
                 writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-                current_df.iloc[1:, :].to_excel(writer, file_name, index=False, header=False,
-                                                startrow=writer.sheets[file_name].max_row)
+                current_df.iloc[1:, :].to_excel(writer, file_name, index=False, header=False,startrow=writer.sheets[file_name].max_row)
                 writer.save()
             else:
                 print(self.project_name, 'hasnt printed', file_name,
                       'probably because of mismatch headers between files (not tabs)')
-
-    # Add data into an excel file
-    def add_project(self):
-        # Used these lines for writting to seperated folders for each year
-        # if not os.path.exists(path + 'BEC ' + self.project_year + ' Shared Data/'):
-        #     os.makedirs(path + 'BEC ' + self.project_year + ' Shared Data/')
-        # self.out_put_folder = path + 'BEC ' + self.project_year + ' Shared Data/'
-        # Create a shared folder for all files in all years
-        if not os.path.exists(path + 'BEC Shared Data/'):
-            os.makedirs(path + 'BEC Shared Data/')
-        self.out_put_folder = path + 'BEC Shared Data/'
-        #Write each tabs into seperate files
-        #self.write_files(self.project_summary_dataframe, 'Project Summary')
-        if (self.beneficiary_dataframe is not None):
-            self.write_files(self.beneficiary_dataframe, 'Beneficiary')
-        #self.write_files(self.site_measures, 'Site Measures')
-        #self.write_files(self.site_references, 'Site References')
 
 
 # Check 2 lists if they are different or not
@@ -603,20 +628,6 @@ def find_difference(list1, list2, flag):
     return
 
 
-# Unprotect files if necessary
-def unprotect_xlsm_file(path, filename, passw):
-    xcl = win32com.client.Dispatch('Excel.Application')
-    # Pass for files in 2018 'Bec2018dec2017'
-    # Pass for files in 2017 'Bec141116'
-    # Pass for files in 2016 'bec060314'
-    # Pass for files in 2015 'bec050314'
-    pw_str = passw
-    wb = xcl.Workbooks.Open(path + filename, False, True, None, pw_str)
-    xcl.DisplayAlerts = False
-    wb.SaveAs(path + filename + 'x', None, '', '')
-    xcl.Quit()
-
-
 # List all files in a folder
 def access_to_working_file(folder_name):
     files = os.listdir(path + folder_name)
@@ -629,8 +640,8 @@ def execute_each_project_in_a_year(folder_name):
     errors = []
     if (len(file_list) > 0):
         for file_name in tqdm(file_list):
-            if ('.xlsm' in file_name or '.xlsx' in file_name or '.xls' in file_name):
-                try:
+            if ('.xlsm' in file_name or '.xlsx' in file_name or '.xls' in file_name) and 'BEC' in file_name:
+                #try:
                     temp_file = BEC_project(folder_name, file_name)
                     temp_file.extract_data()
                     if (temp_file.check_site_measures_units_each_file() == False):
@@ -639,8 +650,8 @@ def execute_each_project_in_a_year(folder_name):
                         if (temp_file.check_available_result()):
                             # temp_file.write_seperate_excel_file(folder_name)
                             temp_file.add_project()
-                except Exception:
-                    errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
+                #except Exception:
+                #    errors.append(temp_file.project_name + ' from ' + temp_file.file_name)
     else:
         print('Folder ' + folder_name + ' is empty')
     if (len(errors) > 0):
