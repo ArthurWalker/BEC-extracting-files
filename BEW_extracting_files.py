@@ -23,13 +23,13 @@ def write_file(path,folder_name,df,new_file_name):
     if not os.path.exists(new_path):
         os.makedirs(new_path)
         if not (os.path.isfile(new_path + new_file_name+'.xlsx')):
-            df.to_excel(new_path + new_file_name+'.xlsx', new_file_name,header=False, index=False)
+            df.to_excel(new_path + new_file_name+'.xlsx',new_file_name,header=False, index=False)
     else:
         if not (os.path.isfile(new_path + new_file_name+'.xlsx')):
-            df.to_excel(new_path + new_file_name+'.xlsx', new_file_name,header=False, index=False)
+            df.to_excel(new_path + new_file_name+'.xlsx',new_file_name,header=False, index=False)
         else:
             book = load_workbook(new_path +new_file_name+'.xlsx')
-            writer = pd.ExcelWriter(new_path +new_file_name+'.xlsx', new_file_name,engine='openpyxl')
+            writer = pd.ExcelWriter(new_path +new_file_name+'.xlsx',engine='openpyxl')
             writer.book = book
             writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
             df.iloc[1:, :].to_excel(writer, new_file_name, index=False, header=False,startrow=writer.sheets[new_file_name].max_row)
@@ -40,18 +40,19 @@ def write_to_1_file(path,df):
     empty_list = df[df[1] == ''].index.tolist()
     if (len(empty_list) > 0):
         df = (df.drop(empty_list, axis=0).reset_index(drop=True))
-    new_path = path + 'Shared Data Evaluation/'
-    if not os.path.exists(path + 'Shared Data Evaluation/'):
-        os.makedirs(path + 'Shared Data Evaluation/')
-        if not (os.path.isfile(new_path + 'Evaluation.xlsx')):
-            df.to_excel(new_path +'Evaluation.xlsx', 'Summary Sheet',header=False, index=False)
-    else:
-        book = load_workbook(new_path +'Evaluation.xlsx')
-        writer = pd.ExcelWriter(new_path +'Evaluation.xlsx', engine='openpyxl')
-        writer.book = book
-        writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-        df.iloc[1:, :].to_excel(writer, 'Summary Sheet', index=False, header=False,startrow=writer.sheets['Summary Sheet'].max_row)
-        writer.save()
+    write_file(path,'',df,'Evaluation')
+    # new_path = path + 'Shared Data Evaluation/'
+    # if not os.path.exists(path + 'Shared Data Evaluation/'):
+    #     os.makedirs(path + 'Shared Data Evaluation/')
+    #     if not (os.path.isfile(new_path + 'Evaluation.xlsx')):
+    #         df.to_excel(new_path +'Evaluation.xlsx', 'Summary Sheet',header=False, index=False)
+    # else:
+    #     book = load_workbook(new_path +'Evaluation.xlsx')
+    #     writer = pd.ExcelWriter(new_path +'Evaluation.xlsx', engine='openpyxl')
+    #     writer.book = book
+    #     writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+    #     df.iloc[1:, :].to_excel(writer, 'Summary Sheet', index=False, header=False,startrow=writer.sheets['Summary Sheet'].max_row)
+    #     writer.save()
 
 def extract_data(excel_file,tab,extracted_lst,skiprow):
     temp_df = pd.read_excel(excel_file, tab, skiprows=skiprow,keep_default_na=False, header=None)
@@ -94,8 +95,8 @@ def assign_task_Evaluation(seeep_path,folder):
         if re.search(r'Batch',file):
             excel_file = pd.ExcelFile(input_folder+file)
             col_lst = ['Reference', 'Applicant', 'Description']
-            summary_df = extract_data(excel_file,'Summary Sheet',col_lst,0,'Evaluation')
-            write_to_1_file(input_folder,summary_df)
+            summary_df = extract_data(excel_file,'Summary Sheet',col_lst,0)
+            write_to_1_file(seeep_path[:-9],summary_df)
 
 
 def assign_task_Summary(seeep_path,file,folder):
@@ -131,8 +132,8 @@ def execute_each_folder(seeep_path,folder_name):
     file_path = seeep_path+folder_name+'/'
     file_path_lst = os.listdir(file_path)
     for file in file_path_lst:
-        # if file == 'Evaluations':
-        #     assign_task_Evaluation(seeep_path+'BEW 2012/',file)
+        if file == 'Evaluations':
+            assign_task_Evaluation(seeep_path+'BEW 2012/',file)
         if re.search(r'Better Energy',file) and re.search(r'Summary',file):
             assign_task_Summary(seeep_path,file,folder_name)
         if re.search(r'Better Energy Board',file):
