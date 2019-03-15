@@ -19,7 +19,6 @@ path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 def write_file(path,folder_name,df,new_file_name):
     empty_list = df[df.iloc[:,1]==''].index.tolist()
-   # print (df.iloc[1:,:].shape[0])
     if (len(empty_list) > 0):
         df = (df.drop(empty_list, axis=0).reset_index(drop=True))
     # Create a shared folder along side with year
@@ -38,9 +37,6 @@ def write_file(path,folder_name,df,new_file_name):
             writer = pd.ExcelWriter(new_path +new_file_name+'.xlsx',engine='openpyxl')
             writer.book = book
             writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-            #print (df.iloc[1:,:].shape[0])
-            # if df.iloc[1:, :].shape[0] == 0:
-            #     print('Problem', df)
             df.iloc[1:, :].to_excel(writer, new_file_name, index=False, header=False,startrow=writer.sheets[new_file_name].max_row)
             writer.save()
 
@@ -61,7 +57,6 @@ def extract_data(excel_file,tab,extracted_lst,skiprow,project_year):
         extracted_df = temp_df[col_extended_workbook]
         extracted_df.insert(0, '',project_year)
         extracted_df.iloc[0, 0] = 'Year'
-    #print (extracted_df.iloc[1:,:].shape[0])
     return extracted_df
 
 def find_extended_column(tab,df_l_line,num_list):
@@ -112,12 +107,12 @@ def assign_task_Overview(seeep_path,file,folder):
     print ('Phase 0')
     excel_file = pd.ExcelFile(input_folder + file)
     print ('Phase 1')
-    # if 'BE Workplaces main workbook' in excel_file.sheet_names:
-    #     lst_col_workbook = ['SEAI Reference', 'Organisation', 'Project Title', 'Total Incl VAT', 'Total Excl VAT',
-    #                         'Select Thermal Fuel', 'Total Energy Cost Savings €', 'Grant  /Approved (Proposed)',
-    #                         'Grant /Approved (Proposed)', 'Primary Energy Savings kWh', 'Site Energy Reduction %']
-    #     df_workplaces = extract_data(excel_file,'BE Workplaces main workbook',lst_col_workbook,3,project_year)
-    #     write_file(seeep_path,folder, df_workplaces,'Workplaces')
+    if 'BE Workplaces main workbook' in excel_file.sheet_names:
+        lst_col_workbook = ['SEAI Reference', 'Organisation', 'Project Title', 'Total Incl VAT', 'Total Excl VAT',
+                            'Select Thermal Fuel', 'Total Energy Cost Savings €', 'Grant  /Approved (Proposed)',
+                            'Grant /Approved (Proposed)', 'Primary Energy Savings kWh', 'Site Energy Reduction %']
+        df_workplaces = extract_data(excel_file,'BE Workplaces main workbook',lst_col_workbook,3,project_year)
+        write_file(seeep_path,folder, df_workplaces,'Workplaces')
     if 'Technologies' in excel_file.sheet_names:
         lst_col_tech = []
         tech_df = extract_data(excel_file,'Technologies',lst_col_tech,0,project_year)
