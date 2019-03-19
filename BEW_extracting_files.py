@@ -132,7 +132,7 @@ def execute_each_folder(seeep_path,folder_name):
 
 
 def main():
-    start_time = time.time()
+    #start_time = time.time()
     path_lst = os.listdir(path)
     if 'SEEEP' in path_lst:
         seeep_path = path+'SEEEP/'
@@ -140,7 +140,7 @@ def main():
         for folder_name in folder:
             if re.search(r'BEW',folder_name):
                 execute_each_folder(seeep_path,folder_name)
-    print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',time.asctime(time.localtime(time.time())))
+    #print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',time.asctime(time.localtime(time.time())))
 
 if __name__ == '__main__':
     main()
