@@ -27,7 +27,7 @@ def execute_each_file(new_path,file):
     # project_year = re.search(r'\d+', file).group()
     excel_file = pd.ExcelFile(input_folder)
     if 'Admin' in excel_file.sheet_names[0]:
-        lst_col_admin = ['Reference No.','Cat. ','Submitted By','Project Title','County','Approved Funding']
+        lst_col_admin = ['Reference No.','Cat. ','Cat. No.','Submitted By','Project Title','County','Approved Funding']
         df= pd.read_excel(excel_file,keep_default_na=False,header=None,skiprows=1)
         series = df.iloc[0]
         col_list = series[series.isin(lst_col_admin)].index.tolist()

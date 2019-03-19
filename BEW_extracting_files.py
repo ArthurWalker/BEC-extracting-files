@@ -96,7 +96,7 @@ def assign_task_Summary(seeep_path,file,folder):
     project_year = re.search(r'\d+', folder).group()
     excel_file = pd.ExcelFile(input_folder + file)
     if 'Admin' in excel_file.sheet_names:
-        lst_col_admin = ['Reference No.','Cat. ','Cat. No.','Submitted By','Project Title','County','Approved Funding']
+        lst_col_admin = ['Reference No.','Cat. ','Submitted By','Project Title','County','Approved Funding']
         admin_df = extract_data(excel_file,'Admin',lst_col_admin,1,project_year)
         write_file(seeep_path,folder,admin_df,'Admin')
 
