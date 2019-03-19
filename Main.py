@@ -7,7 +7,9 @@ def main():
     start_time = time.time()
     print ('BEC')
     bec.main()
+    print ('BEW')
     bew.main()
+    print ('EEE')
     eee.main()
     print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',time.asctime(time.localtime(time.time())))
 

@@ -42,18 +42,18 @@ def write_file(path,folder_name,df,new_file_name):
 
 def extract_data(excel_file,tab,extracted_lst,skiprow,project_year):
     temp_df = pd.read_excel(excel_file, tab, skiprows=skiprow,keep_default_na=False, header=None)
-    print('Phase 2')
+    #print('Phase 2')
     df_1_line = temp_df.iloc[0]
-    print('Phase 3')
+    #print('Phase 3')
     if tab == 'Technologies':
-        print('Phase 4')
+    #    print('Phase 4')
         extracted_df = temp_df.iloc[:,2:]
         extracted_df.insert(0, '',project_year)
         extracted_df.iloc[0, 0] = 'Year'
     else:
         col_index_workbook = find_column(df_1_line, extracted_lst)
         col_extended_workbook = find_extended_column(tab, df_1_line, col_index_workbook)
-        print('Phase 4')
+    #    print('Phase 4')
         extracted_df = temp_df[col_extended_workbook]
         extracted_df.insert(0, '',project_year)
         extracted_df.iloc[0, 0] = 'Year'
@@ -104,9 +104,9 @@ def assign_task_Overview(seeep_path,file,folder):
     input_folder = seeep_path + folder + '/'
     project_name = re.search(r'\w+\s+\w+', file).group()
     project_year = re.search(r'\d+', folder).group()
-    print ('Phase 0')
+    #print ('Phase 0')
     excel_file = pd.ExcelFile(input_folder + file)
-    print ('Phase 1')
+    #print ('Phase 1')
     if 'BE Workplaces main workbook' in excel_file.sheet_names:
         lst_col_workbook = ['SEAI Reference', 'Organisation', 'Project Title', 'Total Incl VAT', 'Total Excl VAT',
                             'Select Thermal Fuel', 'Total Energy Cost Savings €', 'Grant  /Approved (Proposed)',
@@ -117,7 +117,7 @@ def assign_task_Overview(seeep_path,file,folder):
         lst_col_tech = []
         tech_df = extract_data(excel_file,'Technologies',lst_col_tech,0,project_year)
         write_file(seeep_path,folder, tech_df,'Technologies')
-    print ('Phase 5')
+    #print ('Phase 5')
 
 def execute_each_folder(seeep_path,folder_name):
     file_path = seeep_path+folder_name+'/'

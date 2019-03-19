@@ -50,9 +50,9 @@ def execute_each_folder(eep_path,folder_name,project_year):
             new_path = '/'.join(new_path.split('/')[:-2])+'/'
             df.insert(0, '', project_year)
             df.iloc[0, 0] = 'Year'
-            #bew.write_file(new_path,'',df,'Admin')
-        else:
-            execute_each_file_Other(new_path,file)
+            bew.write_file(new_path,'',df,'Admin')
+        # else:
+        #     execute_each_file_Other(new_path,file)
 
 
 def main():
