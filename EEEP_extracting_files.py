@@ -44,7 +44,7 @@ def execute_each_file_Stats(new_path,file):
 def execute_each_folder(eep_path,folder_name,project_year):
     new_path = eep_path+folder_name+'/'
     file_lst = os.listdir(new_path)
-    for file in file_lst:
+    for file in tqdm(file_lst):
         if re.search(r'Statistical',file):
             df = execute_each_file_Stats(new_path,file)
             new_path = '/'.join(new_path.split('/')[:-2])+'/'

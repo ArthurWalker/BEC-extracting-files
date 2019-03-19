@@ -122,7 +122,7 @@ def assign_task_Overview(seeep_path,file,folder):
 def execute_each_folder(seeep_path,folder_name):
     file_path = seeep_path+folder_name+'/'
     file_path_lst = os.listdir(file_path)
-    for file in file_path_lst:
+    for file in tqdm(file_path_lst):
         if file == 'Evaluations':
             assign_task_Evaluation(seeep_path+'BEW 2012/',file)
         if re.search(r'Better Energy',file) and re.search(r'Summary',file):
