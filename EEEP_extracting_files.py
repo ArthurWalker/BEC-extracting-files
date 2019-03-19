@@ -20,11 +20,19 @@ import BEW_extracting_files as bew
 
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
+def execute_each_file_Other(new_path,file):
+    input_file = new_path+file
+    excel_file = pd.ExcelFile(input_file)
+    new_path = '/'.join(new_path.split('/')[:-2]) + '/'
+    # First tab
+    df_project = pd.read_excel(excel_file,excel_file.sheet_names[0],header = None,keep_default_na=False,skiprows=1)
+    bew.write_file(new_path, '', df_project, 'SEEEP Project and Technology Summary January 2010_Project')
+    # Second tab
+    df_energy = pd.read_excel(excel_file,excel_file.sheet_names[1],header = None,keep_default_na=False,skiprows=2,usecols=[0,11])
+    bew.write_file(new_path, '', df_energy, 'SEEEP Project and Technology Summary January 2010_Energy')
 
-def execute_each_file(new_path,file):
+def execute_each_file_Stats(new_path,file):
     input_folder = new_path + file
-    # project_name = re.search(r'\w+\s+\w+', file).group()
-    # project_year = re.search(r'\d+', file).group()
     excel_file = pd.ExcelFile(input_folder)
     if 'Admin' in excel_file.sheet_names[0]:
         lst_col_admin = ['Reference No.','Cat. ','Cat. No.','Submitted By','Project Title','County','Approved Funding']
@@ -38,11 +46,14 @@ def execute_each_folder(eep_path,folder_name,project_year):
     file_lst = os.listdir(new_path)
     for file in file_lst:
         if re.search(r'Statistical',file):
-            df = execute_each_file(new_path,file)
+            df = execute_each_file_Stats(new_path,file)
             new_path = '/'.join(new_path.split('/')[:-2])+'/'
             df.insert(0, '', project_year)
             df.iloc[0, 0] = 'Year'
-            bew.write_file(new_path,'',df,'Admin')
+            #bew.write_file(new_path,'',df,'Admin')
+        else:
+            execute_each_file_Other(new_path,file)
+
 
 def main():
     start_time = time.time()
