@@ -33,12 +33,15 @@ def execute_each_file(new_path,file):
         col_list = series[series.isin(lst_col_admin)].index.tolist()
         return df[col_list]
 
-def execute_each_folder(eep_path,folder_name):
+def execute_each_folder(eep_path,folder_name,project_year):
     new_path = eep_path+folder_name+'/'
     file_lst = os.listdir(new_path)
     for file in file_lst:
         if re.search(r'Statistical',file):
             df = execute_each_file(new_path,file)
+            new_path = '/'.join(new_path.split('/')[:-2])+'/'
+            df.insert(0, '', project_year)
+            df.iloc[0, 0] = 'Year'
             bew.write_file(new_path,'',df,'Admin')
 
 def main():
@@ -49,7 +52,8 @@ def main():
         folder = os.listdir(seeep_path)
         for folder_name in folder:
             if re.search(r'EE',folder_name):
-                execute_each_folder(seeep_path,folder_name)
+                project_year = re.search(r'\d+', folder_name).group()
+                execute_each_folder(seeep_path,folder_name,project_year)
     print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',time.asctime(time.localtime(time.time())))
 
 if __name__ == '__main__':
