@@ -22,10 +22,10 @@ path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 
 def execute_each_file(new_path,file):
-    input_folder = new_path + file + '/'
-    project_name = re.search(r'\w+\s+\w+', file).group()
-    project_year = re.search(r'\d+', file).group()
-    excel_file = pd.ExcelFile(input_folder + file)
+    input_folder = new_path + file
+    # project_name = re.search(r'\w+\s+\w+', file).group()
+    # project_year = re.search(r'\d+', file).group()
+    excel_file = pd.ExcelFile(input_folder)
     if 'Admin' in excel_file.sheet_names[0]:
         lst_col_admin = ['Reference No.','Cat. ','Submitted By','Project Title','County','Approved Funding']
         df= pd.read_excel(excel_file,keep_default_na=False,header=None,skiprows=1)
@@ -37,9 +37,9 @@ def execute_each_folder(eep_path,folder_name):
     new_path = eep_path+folder_name+'/'
     file_lst = os.listdir(new_path)
     for file in file_lst:
-        if re.search(r'Summary',file):
+        if re.search(r'Statistical',file):
             df = execute_each_file(new_path,file)
-    return
+            bew.write_file(new_path,'',df,'Admin')
 
 def main():
     start_time = time.time()
