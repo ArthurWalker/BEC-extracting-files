@@ -15,10 +15,30 @@ from fuzzywuzzy import fuzz
 import msoffcrypto
 import xlrd
 
+from BEW_extracting_files import *
+import BEW_extracting_files as bew
 
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
-def execute_each_folder(eep_path,folder_name)
+
+def execute_each_file(new_path,file):
+    input_folder = new_path + file + '/'
+    project_name = re.search(r'\w+\s+\w+', file).group()
+    project_year = re.search(r'\d+', file).group()
+    excel_file = pd.ExcelFile(input_folder + file)
+    if 'Admin' in excel_file.sheet_names[0]:
+        lst_col_admin = ['Reference No.','Cat. ','Submitted By','Project Title','County','Approved Funding']
+        df= pd.read_excel(excel_file,keep_default_na=False,header=None,skiprows=1)
+        series = df.iloc[0]
+        col_list = series[series.isin(lst_col_admin)].index.tolist()
+        return df[col_list]
+
+def execute_each_folder(eep_path,folder_name):
+    new_path = eep_path+folder_name+'/'
+    file_lst = os.listdir(new_path)
+    for file in file_lst:
+        if re.search(r'Summary',file):
+            df = execute_each_file(new_path,file)
     return
 
 def main():
