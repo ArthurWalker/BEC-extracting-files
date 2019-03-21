@@ -17,7 +17,7 @@ import xlrd
 
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
-def write_file(path,folder_name,df,new_file_name):
+def write_file(path,df,new_file_name):
     empty_list = df[df.iloc[:,1]==''].index.tolist()
     if (len(empty_list) > 0):
         df = (df.drop(empty_list, axis=0).reset_index(drop=True))
@@ -88,7 +88,7 @@ def assign_task_Evaluation(seeep_path,folder):
             excel_file = pd.ExcelFile(input_folder+file)
             col_lst = ['Reference', 'Applicant', 'Description']
             summary_df = extract_data(excel_file,'Summary Sheet',col_lst,0,project_year)
-            write_file(input_folder,'',summary_df,'Summary')
+            write_file(input_folder,summary_df,'Summary')
 
 def assign_task_Summary(seeep_path,file,folder):
     input_folder = seeep_path + folder + '/'
@@ -98,7 +98,7 @@ def assign_task_Summary(seeep_path,file,folder):
     if 'Admin' in excel_file.sheet_names:
         lst_col_admin = ['Reference No.','Cat. ','Submitted By','Project Title','County','Approved Funding']
         admin_df = extract_data(excel_file,'Admin',lst_col_admin,1,project_year)
-        write_file(seeep_path,folder,admin_df,'Admin')
+        write_file(seeep_path,admin_df,'Admin')
 
 def assign_task_Overview(seeep_path,file,folder):
     input_folder = seeep_path + folder + '/'
@@ -112,11 +112,11 @@ def assign_task_Overview(seeep_path,file,folder):
                             'Select Thermal Fuel', 'Total Energy Cost Savings €', 'Grant  /Approved (Proposed)',
                             'Grant /Approved (Proposed)', 'Primary Energy Savings kWh', 'Site Energy Reduction %']
         df_workplaces = extract_data(excel_file,'BE Workplaces main workbook',lst_col_workbook,3,project_year)
-        write_file(seeep_path,folder, df_workplaces,'Workplaces')
+        write_file(seeep_path, df_workplaces,'Workplaces')
     if 'Technologies' in excel_file.sheet_names:
         lst_col_tech = []
         tech_df = extract_data(excel_file,'Technologies',lst_col_tech,0,project_year)
-        write_file(seeep_path,folder, tech_df,'Technologies')
+        write_file(seeep_path, tech_df,'Technologies')
     #print ('Phase 5')
 
 def execute_each_folder(seeep_path,folder_name):
