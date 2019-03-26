@@ -688,10 +688,10 @@ def main():
     # option = input('Choose your task (1 for executing files or 2 for randomly selecting data points): ')
     option = '1'
     if (option == '1'):
-        start_time = time.time()
+        # start_time = time.time()
         working_with_folder()
-        print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',
-              time.asctime(time.localtime(time.time())))
+        # print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',
+        #       time.asctime(time.localtime(time.time())))
 
 
 if __name__ == '__main__':
