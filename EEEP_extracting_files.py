@@ -18,29 +18,40 @@ import xlrd
 from BEW_extracting_files import *
 import BEW_extracting_files as bew
 
+# Initilize working folder
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
+# Execute each file that is not unique
 def execute_each_file_Other(new_path,file):
     input_file = new_path+file
+    # Get the file
     excel_file = pd.ExcelFile(input_file)
     new_path = '/'.join(new_path.split('/')[:-2]) + '/'
-    # First tab
+    # Extracting first tab
     df_project = pd.read_excel(excel_file,excel_file.sheet_names[0],header = None,keep_default_na=False,skiprows=1)
+    # Write into excel files
     bew.write_file(new_path, df_project, 'SEEEP Project and Technology Summary January 2010_Project')
-    # Second tab
+    # Extracting second tab
     df_energy = pd.read_excel(excel_file,excel_file.sheet_names[1],header = None,keep_default_na=False,skiprows=2,usecols=[0,11])
+    # Write into excel file
     bew.write_file(new_path, df_energy, 'SEEEP Project and Technology Summary January 2010_Energy')
 
+# Working with Statistical file
 def execute_each_file_Stats(new_path,file):
     input_folder = new_path + file
+    # Get the excel file
     excel_file = pd.ExcelFile(input_folder)
     if 'Admin' in excel_file.sheet_names[0]:
+        # List columsn
         lst_col_admin = ['Reference No.','Cat. ','Cat. No.','Submitted By','Project Title','County','Approved Funding']
+        # Get the data and put into dataframe
         df= pd.read_excel(excel_file,keep_default_na=False,header=None,skiprows=1)
         series = df.iloc[0]
+        # Return indexies of columns
         col_list = series[series.isin(lst_col_admin)].index.tolist()
         return df[col_list]
 
+# Setting working environment
 def execute_each_folder(eep_path,folder_name,project_year):
     new_path = eep_path+folder_name+'/'
     file_lst = os.listdir(new_path)
