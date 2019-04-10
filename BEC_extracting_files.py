@@ -19,11 +19,6 @@ import win32com
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
 
 
-# Pass for files in 2018 'Bec2018dec2017'
-# Pass for files in 2017 'Bec141116'
-# Pass for files in 2016 'bec060314'
-# Pass for files in 2015 'bec050314'
-# Pass for files in 2014 'bec060314'
 
 class BEC_Non_Domestic(object):
     def __init__(self, bec_file, sheetName, project_name, file_name, tab):
