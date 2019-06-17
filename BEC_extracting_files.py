@@ -150,7 +150,7 @@ class BEC_project(object):
             TEMP_dataframe2 = self.BEC_worksheet['Project Summary'].iloc[:, 0].astype(str)
         # Find beginning row index of the extracted data
             self.list_beginn_row_summary = TEMP_dataframe2[
-            TEMP_dataframe2.str.contains('Better Energy Communities Programme - Non Domestic Costs',
+            TEMP_dataframe2.str.contains('Non Domestic Costs \nTransfer costs to table A3 in application form',
                                          na=False)].index.tolist()
         else:
             TEMP_dataframe2 = self.BEC_worksheet['Project Summary'].iloc[:, 1].astype(str)
@@ -402,6 +402,9 @@ class BEC_project(object):
             '2014': {},
             '2013': {}
         }
+        if self.project_year not in dic_removed:
+            dic_removed[self.project_year]={}
+            dic_removed[self.project_year][self.project_name]=[]
         return dic_removed[self.project_year]
 
 
@@ -447,15 +450,15 @@ class BEC_project(object):
 
     # Write individual project into seperate files
     def write_seperate_excel_file(self, folder_name):
-        # Create a shared folder along side with year
-        if not os.path.exists(path + folder_name + ' Shared Data/'):
-            os.makedirs(path + folder_name + ' Shared Data/')
-        new_path = path + folder_name + ' Shared Data/'
-        # Create a folder for a project
-        if not os.path.exists(new_path + self.project_name + '/'):
-            os.makedirs(new_path + self.project_name + '/')
-        new_path += self.project_name + '/'
-        self.out_put_folder = new_path
+        # Create a shared folder along side if not os.path.exists(path + folder_name + ' Shared Data/'):
+        #             os.makedirs(path + folder_name + ' Shared Data/')
+        #         new_path = path + folder_name + ' Shared Data/'
+        #         # Create a folder for a project
+        #         if not os.path.exists(new_path + self.project_name + '/'):
+        #             os.makedirs(new_path + self.project_name + '/')
+        #         new_path += self.project_name + '/'
+        #         self.out_put_folder = new_path with year
+
         # Store data and write them to excel files
         if (self.project_summary_dataframe is not None):
             self.project_summary_dataframe.to_excel(self.out_put_folder + self.project_name + '_Project Summary.xlsx',
