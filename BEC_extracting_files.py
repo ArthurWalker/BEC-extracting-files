@@ -14,6 +14,7 @@ from fuzzywuzzy import fuzz
 import msoffcrypto
 import xlrd
 import win32com
+from tkinter import *
 
 # Set initial working path for the script
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
@@ -682,14 +683,24 @@ def extract_randomly_data():
     print('Done!')
 
 
+# Design GUI
+def gui():
+    # Create a window
+    window = Tk()
+    window.title('Extracting BEC Files')
+    # Create Label
+    theLabel = Label(window, text='Enter the folder containing input data').pack()
+    window.mainloop()
+
 def main():
     # option = input('Choose your task (1 for executing files or 2 for randomly selecting data points): ')
-    option = '1'
-    if (option == '1'):
-        # start_time = time.time()
-        working_with_folder()
-        # print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',
-        #       time.asctime(time.localtime(time.time())))
+    # gui()
+    # option = '1'
+    # if (option == '1'):
+    start_time = time.time()
+    working_with_folder()
+    print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',
+          time.asctime(time.localtime(time.time())))
 
 
 if __name__ == '__main__':
