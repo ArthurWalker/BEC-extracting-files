@@ -1,6 +1,6 @@
 from tkinter import *
 import os
-import Main as main_program
+import Control_Flow as main_program
 # Design GUI
 
 def buttonFunc():
