@@ -16,7 +16,7 @@ import msoffcrypto
 import xlrd
 
 # Initilize working folder
-path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
+path = ''
 
 # Write dataframe into excel files
 def write_file(path,df,new_file_name):
@@ -163,8 +163,10 @@ def execute_each_folder(seeep_path,folder_name):
             assign_task_Overview(seeep_path,file,folder_name)
 
 
-def main():
+def main(path_value):
     #start_time = time.time()
+    global path
+    path = path_value
     path_lst = os.listdir(path)
     if 'SEEEP' in path_lst:
         seeep_path = path+'SEEEP/'
@@ -174,5 +176,3 @@ def main():
                 execute_each_folder(seeep_path,folder_name)
     #print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',time.asctime(time.localtime(time.time())))
 
-if __name__ == '__main__':
-    main()
