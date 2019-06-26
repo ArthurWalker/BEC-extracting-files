@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-import tempfile
+# import tempfile
 import pandas as pd
-import numpy as np
+# import numpy as np
 import re
 import os
-import sys
+# import sys
 import time
 from tqdm import tqdm
-import xlwings
-import openpyxl
+# import xlwings
+# import openpyxl
 from openpyxl import load_workbook
 from fuzzywuzzy import fuzz
-import msoffcrypto
-import xlrd
-import win32com
+# import msoffcrypto
+# import xlrd
+# import win32com
 
 # Initilize working folder
 path =''

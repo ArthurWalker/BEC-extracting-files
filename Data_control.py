@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+# import numpy as np
 import os
 # Initilize working folder
 path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
