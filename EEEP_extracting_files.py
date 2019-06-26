@@ -17,9 +17,8 @@ import xlrd
 
 from BEW_extracting_files import *
 import BEW_extracting_files as bew
-
 # Initilize working folder
-path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
+path =''
 
 # Execute each file that is not unique
 def execute_each_file_Other(new_path,file):
@@ -66,7 +65,9 @@ def execute_each_folder(eep_path,folder_name,project_year):
         #     execute_each_file_Other(new_path,file)
 
 
-def main():
+def main(path_value):
+    global path
+    path = path_value
     #start_time = time.time()
     path_lst = os.listdir(path)
     if 'SEEEP' in path_lst:
@@ -77,6 +78,3 @@ def main():
                 project_year = re.search(r'\d+', folder_name).group()
                 execute_each_folder(seeep_path,folder_name,project_year)
     #print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',time.asctime(time.localtime(time.time())))
-
-if __name__ == '__main__':
-    main()

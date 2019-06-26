@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
-import tempfile
+# import tempfile
 import pandas as pd
-import numpy as np
+# import numpy as np
 import re
 import os
-import sys
+# import sys
 import time
 from tqdm import tqdm
-import xlwings
-import openpyxl
+# import xlwings
+# import openpyxl
 from openpyxl import load_workbook
 from fuzzywuzzy import fuzz
-import msoffcrypto
-import xlrd
-import win32com
+# import msoffcrypto
+# import xlrd
+# import win32com
 
-# Set initial working path for the script
-path = os.path.join('C:/Users/pphuc/Desktop/Docs/Current Using Docs/')
+# Initilize working folder
+path =''
 
 
 
@@ -682,17 +682,14 @@ def extract_randomly_data():
     print('Done!')
 
 
-def main():
-    # option = input('Choose your task (1 for executing files or 2 for randomly selecting data points): ')
-    option = '1'
-    if (option == '1'):
-        # start_time = time.time()
-        working_with_folder()
-        # print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',
-        #       time.asctime(time.localtime(time.time())))
+def main(path_value):
+    # Set initial working path for the script
+    global path
+    path = path_value
+    start_time = time.time()
+    working_with_folder()
+    print('Done! from ', time.asctime(time.localtime(start_time)), ' to ',
+          time.asctime(time.localtime(time.time())))
 
-
-if __name__ == '__main__':
-    main()
 
 
