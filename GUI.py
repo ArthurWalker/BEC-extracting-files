@@ -17,7 +17,7 @@ def buttonFunc():
         # Running the main function
         main_program.main(path_value)
     except Exception as ex:
-        print ('Error: '+ex)
+        print (ex)
 
 def main():
     global folder
